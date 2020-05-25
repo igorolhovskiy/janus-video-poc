@@ -1,0 +1,11 @@
+version: "2"
+
+services:
+  janus:
+    image: janus:janus-video-poc
+    hostname: janus
+    build:
+      context: .
+      dockerfile: Dockerfile.janus
+    volumes:
+      - ./janus/config:/opt/janus/etc/janus

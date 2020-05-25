@@ -1,0 +1,60 @@
+FROM debian:buster
+
+LABEL maintainer="Igor Olhovskiy <IgorOlhovskiy@gmail.com>"
+
+RUN apt-get update \
+    && apt-get install -y \
+        libmicrohttpd-dev \
+        libjansson-dev \
+        libssl-dev \
+        libsofia-sip-ua-dev \
+        libglib2.0-dev \
+        libopus-dev \
+        libogg-dev \
+        libcurl4-openssl-dev \
+        liblua5.3-dev \
+        libconfig-dev \
+        pkg-config \
+        gengetopt \
+        libtool \
+        automake \
+        git \
+        wget \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        python3-wheel \
+        ninja-build \
+        curl \
+    && cd /opt \
+    && LIBSRTP_VER=$(curl --silent "https://github.com/cisco/libsrtp/releases/latest" | sed 's#.*tag/\(.*\)\".*#\1#') \
+    && wget https://github.com/cisco/libsrtp/archive/${LIBSRTP_VER}.tar.gz \
+    && tar xfv ${LIBSRTP_VER}.tar.gz \
+    && cd $(ls | grep libsrtp) \
+    && ./configure --prefix=/usr --enable-openssl \
+    && make shared_library \
+    && make install \
+    && cd /opt \
+    && pip3 install meson \
+    && git clone https://gitlab.freedesktop.org/libnice/libnice \
+    && cd libnice \
+    && /usr/local/bin/meson --prefix=/usr build \
+    && ninja -C build \
+    && ninja -C build install \
+    && cd /opt \
+    && git clone https://github.com/meetecho/janus-gateway.git \
+    && cd janus-gateway \
+    && sh autogen.sh \
+    && ./configure --prefix=/opt/janus \
+        --disable-plugin-voicemail \
+        --disable-plugin-audiobridge \
+        --disable-plugin-videocall \
+        --disable-plugin-textroom \
+        --disable-plugin-nosip \
+        --disable-plugin-streaming \
+        --disable-plugin-recordplay \
+    && make \
+    && make install \
+    && mkdir -p /opt/janus/etc/janus
+    
+ENTRYPOINT [ "/opt/janus/bin/janus" ]
