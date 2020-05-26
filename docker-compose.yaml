@@ -1,4 +1,4 @@
-version: "2"
+version: "3"
 
 services:
   janus:
@@ -9,3 +9,13 @@ services:
       dockerfile: Dockerfile.janus
     volumes:
       - ./janus/config:/opt/janus/etc/janus
+    network_mode: host
+
+  asterisk:
+    image: asterisk:janus-video-poc
+    build:
+      context: .
+      dockerfile: Dockerfile.asterisk
+    network_mode: host
+    volumes:
+      - "./asterisk:/etc/asterisk"

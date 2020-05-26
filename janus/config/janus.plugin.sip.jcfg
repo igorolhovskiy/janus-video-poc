@@ -22,16 +22,16 @@ general: {
         behind_nat = false
 
         # User-Agent string to be used
-        # user_agent = "Cool WebRTC Gateway"
+        user_agent = "Janus WebRTC Gateway"
 
         # Expiration time for registrations
         register_ttl = 3600
 
         # Range of ports to use for RTP/RTCP (default=10000-60000)
-        rtp_port_range = "20000-40000"
+        rtp_port_range = "20000-25000"
 
         # Whether events should be sent to event handlers (default=true)
-        #events = false
+        events = false
 
         # If you need DSCP packet marking and prioritization, you can configure
         # the 'dscp_audio_rtp' and/or 'dscp_video_rtp' property to specific values,
