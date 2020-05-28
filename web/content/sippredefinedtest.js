@@ -226,19 +226,22 @@ function JanusProcess(account, callback) {
 									Janus.log("[SipPreDefined] Call hung up (" + result["code"] + " " + result["reason"] + ")!");
 									// Reset status
 									sipcall.hangup();
+									$('#myvideo').remove();
 									$('#videos').hide();
 								}
 							}
 						},
 // Local Stream part						
 						onlocalstream: function(stream) {
-							Janus.debug(" ::: Got a local stream :::", stream);
+							Janus.debug("[SipPreDefined] ::: Got a local stream :::", stream);
 							$('#videos').removeClass('hide').show();
 
 							// Create video box
 							if($('#myvideo').length === 0) {
 								$('#videoleft').append('<video class="rounded centered" id="myvideo" width=320 height=240 autoplay playsinline muted="muted"/>');
 							}
+
+							Janus.debug("[SipPreDefined] Attaching local stream to #myvideo container");
 
 							Janus.attachMediaStream($('#myvideo').get(0), stream);
 							$("#myvideo").get(0).muted = "muted";
@@ -279,7 +282,7 @@ function JanusProcess(account, callback) {
 						},
 // Remote stream part
 						onremotestream: function(stream) {
-							Janus.debug(" ::: Got a remote stream :::", stream);
+							Janus.debug("[SipPreDefined] ::: Got a remote stream :::", stream);
 							if($('#remotevideo').length === 0) {
 								$('#videoright').append(
 									'<video class="rounded centered hide" id="remotevideo" width=320 height=240 autoplay playsinline/>');
@@ -293,6 +296,8 @@ function JanusProcess(account, callback) {
 									spinner = null;
 								});
 							}
+
+							Janus.debug("[SipPreDefined] Attaching remote stream to #remotevideo container");
 							Janus.attachMediaStream($('#remotevideo').get(0), stream);
 							let videoTracks = stream.getVideoTracks();
 
