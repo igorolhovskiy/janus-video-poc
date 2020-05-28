@@ -163,8 +163,10 @@ function JanusProcess(account, callback) {
 									return;
 								} else if (event === 'registered') {
 									Janus.log("[SipPreDefined] Successfully registered as " + result["username"] + ", calling...");
+
 									// Time to make a call to MusicOnHold!
-									doCall("4321"); 
+									doSipAudioCall("4321"); 
+
 								} else if(event === 'calling') {
 									Janus.log("[SipPreDefined] Waiting for the peer to answer...");
 									// Show "Hangup" button
@@ -188,8 +190,8 @@ function JanusProcess(account, callback) {
 									if(jsep) {
 										sipcall.handleRemoteJsep({ jsep: jsep, error: doHangup });
 									}
-									toastr.success("Call accepted!");
 									sipcall.callId = callId;
+									
 								} else if (event === 'updatingcall') {
 									// We got a re-INVITE: while we may prompt the user (e.g.,
 									// to notify about media changes), to keep things simple
@@ -341,21 +343,19 @@ function registerUsername(account) {
 	sipcall.send({ message: register });
 }
 
-function doCall(destination) {
-	// Call someone (from the main session or one of the helpers)
-	// Call this URI
-	doVideo = false;
-	Janus.log("[SipPreDefined] This is a SIP " + (doVideo ? "video" : "audio") + " call to " + destination);
-	actuallyDoCall(sipcall, "sip:" + destination + "@127.0.0.1:5061", doVideo);
-}
-function actuallyDoCall(handle, uri, doVideo) {
-	handle.createOffer(
+function doSipAudioCall(destination) {
+
+	Janus.log("[SipPreDefined] This is a SIP audio call to " + destination);
+
+	let uri = "sip:" + destination + "@127.0.0.1:5061";
+
+	sipcall.createOffer(
 		{
 			media: {
 				audioSend: true, 
 				audioRecv: true,		// We DO want audio
-				videoSend: doVideo, 
-				videoRecv: doVideo		// We MAY want video
+				videoSend: false, 
+				videoRecv: false		// We DO NOT want video
 			},
 			success: function(jsep) {
 				Janus.debug("[SipPreDefined] Got SDP!", jsep);
@@ -363,7 +363,7 @@ function actuallyDoCall(handle, uri, doVideo) {
 					request: "call", 
 					uri: uri 
 				};
-				handle.send({ 
+				sipcall.send({ 
 					message: body, 
 					jsep: jsep 
 				});
