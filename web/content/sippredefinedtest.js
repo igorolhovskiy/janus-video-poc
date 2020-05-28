@@ -191,7 +191,7 @@ function JanusProcess(account, callback) {
 										sipcall.handleRemoteJsep({ jsep: jsep, error: doHangup });
 									}
 									sipcall.callId = callId;
-									
+
 								} else if (event === 'updatingcall') {
 									// We got a re-INVITE: while we may prompt the user (e.g.,
 									// to notify about media changes), to keep things simple
@@ -226,6 +226,7 @@ function JanusProcess(account, callback) {
 									Janus.log("[SipPreDefined] Call hung up (" + result["code"] + " " + result["reason"] + ")!");
 									// Reset status
 									sipcall.hangup();
+									$('#videos').addClass('hide').hide();
 								}
 							}
 						},
