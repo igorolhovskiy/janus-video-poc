@@ -226,7 +226,7 @@ function JanusProcess(account, callback) {
 									Janus.log("[SipPreDefined] Call hung up (" + result["code"] + " " + result["reason"] + ")!");
 									// Reset status
 									sipcall.hangup();
-									$('#videos').addClass('hide').hide();
+									$('#videos').hide();
 								}
 							}
 						},
