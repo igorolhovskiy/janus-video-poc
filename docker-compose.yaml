@@ -9,6 +9,8 @@ services:
       dockerfile: Dockerfile.janus
     volumes:
       - ./janus/config:/opt/janus/etc/janus
+      - ./janus/cert/server.crt:/etc/ssl/private/server.crt
+      - ./janus/cert/server.key:/etc/ssl/private/server.key
     network_mode: host
 
   asterisk:
@@ -26,4 +28,6 @@ services:
       - ./web/content:/usr/share/nginx/html
       - ./web/config/ngnix.conf:/etc/nginx/nginx.conf
       - ./web/config/content.conf:/etc/nginx/conf.d/default.conf
+      - ./web/cert/server.crt:/etc/ssl/private/server.crt
+      - ./web/cert/server.key:/etc/ssl/private/server.key
     network_mode: host

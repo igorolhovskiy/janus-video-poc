@@ -5,6 +5,8 @@ LABEL maintainer="Igor Olhovskiy <Igor Olhovskiy@gmail.com>"
 RUN apk add --update \
       asterisk \
       asterisk-sample-config \
+      asterisk-sounds-moh \
+      asterisk-sounds-en \
       sngrep \
       ngrep \
 && rm -rf /usr/lib/asterisk/modules/*pjsip* \

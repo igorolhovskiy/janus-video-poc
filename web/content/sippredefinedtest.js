@@ -42,11 +42,12 @@
 // in the presented order. The first working server will be used for
 // the whole session.
 //
-var server = null;
-if(window.location.protocol === 'http:')
+let server = null;
+if(window.location.protocol === 'http:') {
 	server = "http://" + window.location.hostname + ":8088/janus";
-else
+} else {
 	server = "https://" + window.location.hostname + ":8089/janus";
+}
 
 var janus = null;
 var sipcall = null;
@@ -163,9 +164,13 @@ function JanusProcess(account, callback) {
 										callback("[SipPreDefined] Registration failed: " + result["code"] + " " + result["reason"], null);
 										return;
 									} else if (event === 'registered') {
-										Janus.log("[SipPreDefined] Successfully registered as " + result["username"] + "!");
+										Janus.log("[SipPreDefined] Successfully registered as " + result["username"] + ", calling...");
+										// Time to make a call to MusicOnHold!
+										doCall("5555"); 
 									} else if(event === 'calling') {
 										Janus.log("[SipPreDefined] Waiting for the peer to answer...");
+										$('#call').removeAttr('disabled').html('Hangup').removeClass('hidden')
+												  .addClass("btn-danger").unbind('click').click(doHangup);
 										// TODO Any ringtone?
 									} else if (event === 'incomingcall') {
 										Janus.log("Incoming call from " + result["username"] + ", ignoring....");										
@@ -239,7 +244,7 @@ function JanusProcess(account, callback) {
 								}
 							},
 							onlocalstream: function(stream) {
-								Janus.debug("[SipPreDefined] ::: Got a local stream :::", stream);
+								Janus.debug(" ::: Got a local stream :::", stream);
 								$('#videos').removeClass('hide').show();
 								if($('#myvideo').length === 0)
 									$('#videoleft').append('<video class="rounded centered" id="myvideo" width=320 height=240 autoplay playsinline muted="muted"/>');
@@ -283,6 +288,15 @@ function JanusProcess(account, callback) {
 							onremotestream: function(stream) {
 								Janus.debug(" ::: Got a remote stream :::", stream);
 								if($('#remotevideo').length === 0) {
+									$('#videoright').parent().find('h3').html(
+										'Send DTMF: <span id="dtmf" class="btn-group btn-group-xs"></span>' +
+										'<span id="ctrls" class="pull-right btn-group btn-group-xs">' +
+											'<button id="msg" title="Send message" class="btn btn-info"><i class="fa fa-envelope"></i></button>' +
+											'<button id="info" title="Send INFO" class="btn btn-info"><i class="fa fa-info"></i></button>' +
+											'<button id="transfer" title="Transfer call" class="btn btn-info"><i class="fa fa-mail-forward"></i></button>' +
+										'</span>');
+									$('#videoright').append(
+										'<video class="rounded centered hide" id="remotevideo" width=320 height=240 autoplay playsinline/>');
 									// Show the peer and hide the spinner when we get a playing event
 									$("#remotevideo").bind("playing", function () {
 										$('#waitingvideo').remove();
@@ -311,12 +325,7 @@ function JanusProcess(account, callback) {
 								}
 							},
 							oncleanup: function() {
-								Janus.log(" ::: Got a cleanup notification :::");
-								$('#myvideo').remove();
-								$('#waitingvideo').remove();
-								$('#remotevideo').remove();
-								$('#videos .no-video-container').remove();
-								$('#videos').hide();
+								Janus.log("[SipPreDefined] ::: Got a cleanup notification :::");
 								if(sipcall)
 									sipcall.callId = null;
 							}
@@ -347,107 +356,46 @@ function registerUsername(account) {
 	sipcall.send({ message: register });
 }
 
-function doCall(ev) {
+function doCall(destination) {
 	// Call someone (from the main session or one of the helpers)
-	var button = ev ? ev.currentTarget.id : "call";
-	var helperId = button.split("call")[1];
-	if(helperId === "")
-		helperId = null;
-	else
-		helperId = parseInt(helperId);
-	var handle = helperId ? helpers[helperId].sipcall : sipcall;
-	var prefix = helperId ? ("[Helper #" + helperId + "]") : "";
-	var suffix = helperId ? (""+helperId) : "";
-	$('#peer' + suffix).attr('disabled', true);
-	$('#call' + suffix).attr('disabled', true).unbind('click');
-	$('#dovideo' + suffix).attr('disabled', true);
-	var username = $('#peer' + suffix).val();
-	if(username === "") {
-		bootbox.alert('Please insert a valid SIP address (e.g., sip:pluto@example.com)');
-		$('#peer' + suffix).removeAttr('disabled');
-		$('#dovideo' + suffix).removeAttr('disabled');
-		$('#call' + suffix).removeAttr('disabled').click(function() { doCall(helperId); });
-		return;
-	}
-	if(username.indexOf("sip:") != 0 || username.indexOf("@") < 0) {
-		bootbox.alert('Please insert a valid SIP address (e.g., sip:pluto@example.com)');
-		$('#peer' + suffix).removeAttr('disabled').val("");
-		$('#dovideo' + suffix).removeAttr('disabled').val("");
-		$('#call' + suffix).removeAttr('disabled').click(function() { doCall(helperId); });
-		return;
-	}
 	// Call this URI
-	doVideo = $('#dovideo' + suffix).is(':checked');
-	Janus.log(prefix + "This is a SIP " + (doVideo ? "video" : "audio") + " call (dovideo=" + doVideo + ")");
-	actuallyDoCall(handle, $('#peer' + suffix).val(), doVideo);
+	doVideo = false;
+	Janus.log("[SipPreDefined] This is a SIP " + (doVideo ? "video" : "audio") + " call to " + destination);
+	actuallyDoCall(sipcall, "sip:" + destination + "@127.0.0.1:5061", doVideo);
 }
-function actuallyDoCall(handle, uri, doVideo, referId) {
+function actuallyDoCall(handle, uri, doVideo) {
 	handle.createOffer(
 		{
 			media: {
-				audioSend: true, audioRecv: true,		// We DO want audio
-				videoSend: doVideo, videoRecv: doVideo	// We MAY want video
+				audioSend: true, 
+				audioRecv: true,		// We DO want audio
+				videoSend: doVideo, 
+				videoRecv: doVideo		// We MAY want video
 			},
 			success: function(jsep) {
-				Janus.debug("Got SDP!", jsep);
-				// By default, you only pass the SIP URI to call as an
-				// argument to a "call" request. Should you want the
-				// SIP stack to add some custom headers to the INVITE,
-				// you can do so by adding an additional "headers" object,
-				// containing each of the headers as key-value, e.g.:
-				//		var body = { request: "call", uri: $('#peer').val(),
-				//			headers: {
-				//				"My-Header": "value",
-				//				"AnotherHeader": "another string"
-				//			}
-				//		};
-				var body = { request: "call", uri: uri };
-				// Note: you can also ask the plugin to negotiate SDES-SRTP, instead of the
-				// default plain RTP, by adding a "srtp" attribute to the request. Valid
-				// values are "sdes_optional" and "sdes_mandatory", e.g.:
-				//		var body = { request: "call", uri: $('#peer').val(), srtp: "sdes_optional" };
-				// "sdes_optional" will negotiate RTP/AVP and add a crypto line,
-				// "sdes_mandatory" will set the protocol to RTP/SAVP instead.
-				// Just beware that some endpoints will NOT accept an INVITE
-				// with a crypto line in it if the protocol is not RTP/SAVP,
-				// so if you want SDES use "sdes_optional" with care.
-				// Note 2: by default, the SIP plugin auto-answers incoming
-				// re-INVITEs, without involving the browser/client: this is
-				// for backwards compatibility with older Janus clients that
-				// may not be able to handle them. If you want to receive
-				// re-INVITES to handle them yourself, specify it here, e.g.:
-				//		body["autoaccept_reinvites"] = false;
-				if(referId) {
-					// In case we're originating this call because of a call
-					// transfer, we need to provide the internal reference ID
-					body["refer_id"] = referId;
-				}
-				handle.send({ message: body, jsep: jsep });
+				Janus.debug("[SipPreDefined] Got SDP!", jsep);
+				var body = { 
+					request: "call", 
+					uri: uri 
+				};
+				handle.send({ 
+					message: body, 
+					jsep: jsep 
+				});
 			},
 			error: function(error) {
-				Janus.error(prefix + "WebRTC error...", error);
-				bootbox.alert("WebRTC error... " + error.message);
+				Janus.error("[SipPreDefined][actuallyDoCall] No SSL on host? WebRTC error...", error);
 			}
 		});
 }
 
-function doHangup(ev) {
-	// Hangup a call (on the main session or one of the helpers)
-	var button = ev ? ev.currentTarget.id : "call";
-	var helperId = button.split("call")[1];
-	if(helperId === "")
-		helperId = null;
-	else
-		helperId = parseInt(helperId);
-	if(!helperId) {
-		$('#call').attr('disabled', true).unbind('click');
-		var hangup = { request: "hangup" };
-		sipcall.send({ message: hangup });
-		sipcall.hangup();
-	} else {
-		$('#call' + helperId).attr('disabled', true).unbind('click');
-		var hangup = { request: "hangup" };
-		helpers[helperId].sipcall.send({ message: hangup });
-		helpers[helperId].sipcall.hangup();
-	}
+function doHangup() {
+
+	let hangup = { 
+		request: "hangup" 
+	};
+	Janus.debug("[SipPreDefined][doHangup] Call hangup...");
+	sipcall.send({ message: hangup });
+	sipcall.hangup();
+	window.location.reload();
 }
