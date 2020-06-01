@@ -91,8 +91,7 @@ $(document).ready(function() {
 					//		apisecret: "serversecret",
 					success: function() {
 						// Attach to EchoTest plugin
-						janus.attach(
-							{
+						janus.attach({
 								plugin: "janus.plugin.echotest",
 								opaqueId: opaqueId,
 								success: function(pluginHandle) {
