@@ -243,7 +243,7 @@ function JanusProcess(account, callback) {
 							}
 
 							Janus.debug("[SipPreDefined] Attaching local stream to #myvideo container");
-							Janus.attachMediaStream($('#myvideo').get(0), stream);
+							// Janus.attachMediaStream($('#myvideo').get(0), stream);
 							
 							$("#myvideo").get(0).muted = "muted";
 							if(sipcall.webrtcStuff.pc.iceConnectionState !== "compvared" &&
@@ -458,6 +458,45 @@ function startVideo() {
 			Janus.debug("[SipPreDefined][startVideo] ::: Got a local stream, attaching to #myvideo", stream);
 
 			$('#videoright_echo').append('<video class="rounded centered" id="waitingvideo_echo" width=320 height=240 />');
+
+			$('#videos').removeClass('hide').show();
+
+			// Create video box
+			if($('#myvideo').length === 0) {
+				$('#videoleft').append('<video class="rounded centered" id="myvideo" width=320 height=240 autoplay playsinline muted="muted"/>');
+			}
+
+			Janus.debug("[SipPreDefined] Attaching local stream to #myvideo container");
+			Janus.attachMediaStream($('#myvideo').get(0), stream);
+			
+			$("#myvideo").get(0).muted = "muted";
+			if(sipcall.webrtcStuff.pc.iceConnectionState !== "compvared" &&
+					sipcall.webrtcStuff.pc.iceConnectionState !== "connected") {
+				$("#videoleft").parent().block({
+					message: '<b>Calling...</b>',
+					css: {
+						border: 'none',
+						backgroundColor: 'transparent',
+						color: 'white'
+					}
+				});
+			}
+			let videoTracks = stream.getVideoTracks();
+			if(!videoTracks || videoTracks.length === 0) {
+				// No webcam
+				$('#myvideo').hide();
+				if($('#videoleft .no-video-container').length === 0) {
+					$('#videoleft').append(
+						'<div class="no-video-container">' +
+							'<i class="fa fa-video-camera fa-5 no-video-icon"></i>' +
+							'<span class="no-video-text">No webcam available</span>' +
+						'</div>');
+				}
+			} else {
+				$('#videoleft .no-video-container').remove();
+				$('#myvideo').removeClass('hide').show();
+			}
+
 			// Janus.attachMediaStream($('#myvideo').get(0), stream);
 		},
 		onremotestream: function(stream) {
