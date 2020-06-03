@@ -42,6 +42,10 @@
 // in the presented order. The first working server will be used for
 // the whole session.
 //
+
+let sip_proxy = "127.0.0.1";
+let sip_proxy_port = "5061";
+
 let server = null;
 if(window.location.protocol === 'http:') {
 	server = "http://" + window.location.hostname + ":8088/janus";
@@ -165,8 +169,8 @@ function JanusProcess(account, callback) {
 								} else if (event === 'registered') {
 									Janus.log("[SipPreDefined] Successfully registered as " + result["username"] + ", calling...");
 
-									// Time to make a call to MusicOnHold!
-									doSipAudioCall("4321"); 
+									// Time to make a call to ConfBridge!
+									doSipAudioCall("5555"); 
 
 								} else if(event === 'calling') {
 									Janus.log("[SipPreDefined] Waiting for the peer to answer...");
@@ -343,11 +347,11 @@ function registerUsername(account) {
 	// Try a registration
 	let register = {
 		request: "register",
-		username: "sip:" + account + "@127.0.0.1",
+		username: "sip:" + account + "@" + sip_proxy,
 		authuser: account,
 		display_name: "Test " + account,
 		secret: account,
-		proxy: "sip:127.0.0.1:5061"
+		proxy: "sip" + sip_proxy + ":" + sip_proxy_port,
 	};
 
 	sipcall.send({ message: register });
@@ -356,8 +360,6 @@ function registerUsername(account) {
 function doSipAudioCall(destination) {
 
 	Janus.log("[SipPreDefined] This is a SIP audio call to " + destination);
-
-	let uri = "sip:" + destination + "@127.0.0.1:5061";
 
 	sipcall.createOffer(
 		{
@@ -371,7 +373,7 @@ function doSipAudioCall(destination) {
 				Janus.debug("[SipPreDefined] Got SDP!", jsep);
 				let body = { 
 					request: "call", 
-					uri: uri 
+					uri: "sip:" + destination + "@" + sip_proxy + ":" + sip_proxy_port, 
 				};
 				sipcall.send({ 
 					message: body, 
