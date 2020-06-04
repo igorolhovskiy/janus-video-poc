@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>Janus WebRTC Server: SIP Gateway Demo</title>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/webrtc-adapter/6.4.0/adapter.min.js" ></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.9.1/jquery.min.js" ></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery.blockUI/2.70/jquery.blockUI.min.js" ></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootbox.js/5.4.0/bootbox.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/spin.js/2.3.2/spin.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.6.0/js/md5.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.js"></script>
+<script type="text/javascript" src="janus.js" ></script>
+<script type="text/javascript" src="sipvideoroom.js"></script>
+<script>
+	$(function() {
+		$(".navbar-static-top").load("navbar.html", function() {
+			$(".navbar-static-top li.dropdown").addClass("active");
+			$(".navbar-static-top a[href='sipvideoroom.html']").parent().addClass("active");
+		});
+		$(".footer").load("footer.html");
+	});
+</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.0/cerulean/bootstrap.min.css" type="text/css"/>
+<link rel="stylesheet" href="css/demo.css" type="text/css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" type="text/css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.css"/>
+</head>
+<body>
+
+<nav class="navbar navbar-default navbar-static-top">
+</nav>
+
+<div class="container">
+	<div class="row">
+		<div class="col-md-12">
+			<div class="container" id="sipcall">
+				<div class="row">
+					<div class="col-md-12">
+						<div class="col-md-6 container" id="login">
+
+							<button class="btn btn-default" autocomplete="off" id="start_1">Start Account 1</button>
+							<button class="btn btn-default" autocomplete="off" id="start_2">Start Account 2</button>
+							<button class="btn btn-default" autocomplete="off" id="start_3">Start Account 3</button>
+							<button class="btn margin-bottom-sm hidden btn-danger" autocomplete="off" id="hangup">Hangup</button>
+							<button class="btn margin-bottom-sm hidden btn-success" autocomplete="off" id="videostart">Start Video</button>
+						</div>
+					</div>
+				</div>
+				<div id="videos" class="hide">
+					<div class="col-md-6">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<h3 class="panel-title">Me</h3>
+							</div>
+							<div class="panel-body" id="videoleft"></div>
+						</div>
+					</div>
+					<div class="col-md-6">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<h3 class="panel-title">Remote</h3>
+							</div>
+							<div class="panel-body" id="videoright"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<hr>
+	<div class="footer">
+	</div>
+</div>
+
+</body>
+</html>

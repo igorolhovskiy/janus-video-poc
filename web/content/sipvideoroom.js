@@ -45,7 +45,7 @@
 
 const sip_proxy = "127.0.0.1",
 	sip_proxy_port = "5061",
-	number_to_dial = "5555"; // 4321 for MoH, any other - for ConfBridge
+	number_to_dial = "4321"; // 4321 for MoH, any other - for ConfBridge
 
 let server = null;
 if(window.location.protocol === 'http:') {
@@ -76,10 +76,10 @@ $(document).ready(function() {
 	$('#start_1').click(function() {
 		JanusProcess('700000100001', (err, res) => {
 			if (err) {
-				console.log("[SipPreDefined] Error: " + err);
+				console.log("[SipVideoRoom] Error: " + err);
 				return;
 			}
-			console.log("[SipPreDefined] " + res);
+			console.log("[SipVideoRoom] " + res);
 		});
 	});
 
@@ -89,7 +89,7 @@ $(document).ready(function() {
 				bootbox.alert(err);
 				return;
 			}
-			console.log("[SipPreDefined] " + res);
+			console.log("[SipVideoRoom] " + res);
 		});
 	});
 
@@ -99,7 +99,7 @@ $(document).ready(function() {
 				bootbox.alert(err);
 				return;
 			}
-			console.log("[SipPreDefined] " + res);
+			console.log("[SipVideoRoom] " + res);
 		});
 	});
 
@@ -133,31 +133,31 @@ function JanusProcess(account, callback) {
 						opaqueId: sipOpaqueId,
 						success: function(pluginHandle) {
 							sipcall = pluginHandle;
-							Janus.log("[SipPreDefined] Plugin attached! (" + sipcall.getPlugin() + ", id=" + sipcall.getId() + ")");
+							Janus.log("[SipVideoRoom] Plugin attached! (" + sipcall.getPlugin() + ", id=" + sipcall.getId() + ")");
 							
 							// Prepare the username registration
 							registerUsername(account);
-							callback(null, "[SipPreDefined] RegisterUsername started...");
+							callback(null, "[SipVideoRoom] RegisterUsername started...");
 						},
 						error: function(error) {
-							callback("[SipPreDefined]  -- Error attaching plugin..." + error, null);
+							callback("[SipVideoRoom]  -- Error attaching plugin..." + error, null);
 							return;
 						},
 						iceState: function(state) {
-							Janus.log("[SipPreDefined] ICE state changed to " + state);
+							Janus.log("[SipVideoRoom] ICE state changed to " + state);
 						},
 						mediaState: function(medium, on) {
-							Janus.log("[SipPreDefined] Janus " + (on ? "started" : "stopped") + " receiving our " + medium);
+							Janus.log("[SipVideoRoom] Janus " + (on ? "started" : "stopped") + " receiving our " + medium);
 						},
 						webrtcState: function(on) {
-							Janus.log("[SipPreDefined] Janus says our WebRTC PeerConnection is " + (on ? "up" : "down") + " now");
+							Janus.log("[SipVideoRoom] Janus says our WebRTC PeerConnection is " + (on ? "up" : "down") + " now");
 							$("#videoleft").parent().unblock();
 						},
 						onmessage: function(msg, jsep) {
-							Janus.debug("[SipPreDefined] ::: Got a message :::", msg);
+							Janus.debug("[SipVideoRoom] ::: Got a message :::", msg);
 							// Any error?
 							if(msg["error"]) {
-								callback("[SipPreDefined] Message error: " + msg["error"], null);
+								callback("[SipVideoRoom] Message error: " + msg["error"], null);
 							}
 							let callId = msg["call_id"];
 							let result = msg["result"];
@@ -166,16 +166,16 @@ function JanusProcess(account, callback) {
 								// Event Switch
 
 								if (event === 'registration_failed') {
-									callback("[SipPreDefined] Registration failed: " + result["code"] + " " + result["reason"], null);
+									callback("[SipVideoRoom] Registration failed: " + result["code"] + " " + result["reason"], null);
 									return;
 								} else if (event === 'registered') {
-									Janus.log("[SipPreDefined] Successfully registered as " + result["username"] + ", calling...");
+									Janus.log("[SipVideoRoom] Successfully registered as " + result["username"] + ", calling...");
 
 									// Time to make a call to ConfBridge!
 									doSipAudioCall(number_to_dial); 
 
 								} else if(event === 'calling') {
-									Janus.log("[SipPreDefined] Waiting for the peer to answer...");
+									Janus.log("[SipVideoRoom] Waiting for the peer to answer...");
 									// Show "Hangup" button
 									$('#hangup').removeAttr('disabled').removeClass('hidden').click(doHangup);
 									// TODO Any ringtone?
@@ -185,14 +185,14 @@ function JanusProcess(account, callback) {
 									// Response to an offerless INVITE, var's wait for an 'accepted'
 									Janus.log("accepting from " + JSON.stringify(result) + ", continue....");
 								} else if(event === 'progress') {
-									Janus.log("[SipPreDefined] There's early media from " + result["username"] + ", wairing for the call!", jsep);
+									Janus.log("[SipVideoRoom] There's early media from " + result["username"] + ", wairing for the call!", jsep);
 									// Call can start already: handle the remote answer
 									if(jsep) {
 										sipcall.handleRemoteJsep({ jsep: jsep, error: doHangup });
 									}
 									toastr.info("Early media...");
 								} else if(event === 'accepted') {
-									Janus.log("[SipPreDefined] " + result["username"] + " accepted the call!", jsep);
+									Janus.log("[SipVideoRoom] " + result["username"] + " accepted the call!", jsep);
 									// Call can start, now: handle the remote answer
 									if(jsep) {
 										sipcall.handleRemoteJsep({ jsep: jsep, error: doHangup });
@@ -203,7 +203,7 @@ function JanusProcess(account, callback) {
 									// We got a re-INVITE: while we may prompt the user (e.g.,
 									// to notify about media changes), to keep things simple
 									// we just accept the update and send an answer right away
-									Janus.log("[SipPreDefined] Got re-INVITE");
+									Janus.log("[SipVideoRoom] Got re-INVITE");
 									let doAudio = (jsep.sdp.indexOf("m=audio ") > -1),
 										doVideo = (jsep.sdp.indexOf("m=video ") > -1);
 									sipcall.createAnswer(
@@ -211,26 +211,26 @@ function JanusProcess(account, callback) {
 											jsep: jsep,
 											media: { audio: doAudio, video: doVideo },
 											success: function(jsep) {
-												Janus.debug("[SipPreDefined] Got SDP " + jsep.type + "! audio=" + doAudio + ", video=" + doVideo + ":", jsep);
+												Janus.debug("[SipVideoRoom] Got SDP " + jsep.type + "! audio=" + doAudio + ", video=" + doVideo + ":", jsep);
 												let body = { request: "update" };
 												sipcall.send({ message: body, jsep: jsep });
 											},
 											error: function(error) {
-												Janus.log("[SipPreDefined] WebRTC error... " + error.message, null);
+												Janus.log("[SipVideoRoom] WebRTC error... " + error.message, null);
 											}
 										});
 								} else if (event === 'message') {
 									// We got a MESSAGE
-									Janus.log('[SipPreDefined] Got message ' + JSON.stringify(result));
+									Janus.log('[SipVideoRoom] Got message ' + JSON.stringify(result));
 								} else if(event === 'info') {
 									// We got an INFO
-									Janus.log('[SipPreDefined] Got info ' + JSON.stringify(result));
+									Janus.log('[SipVideoRoom] Got info ' + JSON.stringify(result));
 								} else if(event === 'notify') {
-									Janus.log('[SipPreDefined] Got notify ' + JSON.stringify(result));
+									Janus.log('[SipVideoRoom] Got notify ' + JSON.stringify(result));
 								} else if(event === 'transfer') {
 									Janus.log('[Sip] Got a transfer reqeuest, ignoring :' + JSON.stringify(result));
 								} else if(event === 'hangup') {
-									Janus.log("[SipPreDefined] Call hung up (" + result["code"] + " " + result["reason"] + ")!");
+									Janus.log("[SipVideoRoom] Call hung up (" + result["code"] + " " + result["reason"] + ")!");
 									// Reset status
 									sipcall.hangup();
 									$('#myvideo').remove();
@@ -240,7 +240,7 @@ function JanusProcess(account, callback) {
 						},
 // Local Stream part						
 						onlocalstream: function(stream) {
-							Janus.debug("[SipPreDefined] ::: Got a local stream :::", stream);
+							Janus.debug("[SipVideoRoom] ::: Got a local stream :::", stream);
 							$('#videos').removeClass('hide').show();
 
 							// Create video box
@@ -248,7 +248,7 @@ function JanusProcess(account, callback) {
 								$('#videoleft').append('<video class="rounded centered" id="myvideo" width=320 height=240 autoplay playsinline muted="muted"/>');
 							}
 
-							Janus.debug("[SipPreDefined] Attaching local stream to #myvideo container");
+							Janus.debug("[SipVideoRoom] Attaching local stream to #myvideo container");
 							// Janus.attachMediaStream($('#myvideo').get(0), stream);
 							
 							$("#myvideo").get(0).muted = "muted";
@@ -289,7 +289,7 @@ function JanusProcess(account, callback) {
 						},
 // Remote stream part
 						onremotestream: function(stream) {
-							Janus.debug("[SipPreDefined] ::: Got a remote stream :::", stream);
+							Janus.debug("[SipVideoRoom] ::: Got a remote stream :::", stream);
 							if($('#remotevideo').length === 0) {
 								$('#videoright').append(
 									'<video class="rounded centered hide" id="remotevideo" width=320 height=240 autoplay playsinline/>');
@@ -304,7 +304,7 @@ function JanusProcess(account, callback) {
 								});
 							}
 
-							Janus.debug("[SipPreDefined] Attaching remote stream to #remotevideo container");
+							Janus.debug("[SipVideoRoom] Attaching remote stream to #remotevideo container");
 							Janus.attachMediaStream($('#remotevideo').get(0), stream);
 							let videoTracks = stream.getVideoTracks();
 
@@ -328,7 +328,7 @@ function JanusProcess(account, callback) {
 						},
 // End streams part
 						oncleanup: function() {
-							Janus.log("[SipPreDefined] ::: Got a cleanup notification :::");
+							Janus.log("[SipVideoRoom] ::: Got a cleanup notification :::");
 							if(sipcall)
 								sipcall.callId = null;
 						}
@@ -361,7 +361,7 @@ function registerUsername(account) {
 
 function doSipAudioCall(destination) {
 
-	Janus.log("[SipPreDefined] This is a SIP audio call to " + destination);
+	Janus.log("[SipVideoRoom] This is a SIP audio call to " + destination);
 
 	sipcall.createOffer(
 		{
@@ -372,7 +372,7 @@ function doSipAudioCall(destination) {
 				videoRecv: false		// We DO NOT want video
 			},
 			success: function(jsep) {
-				Janus.debug("[SipPreDefined] Got SDP!", jsep);
+				Janus.debug("[SipVideoRoom] Got SDP!", jsep);
 				let body = { 
 					request: "call", 
 					uri: "sip:" + destination + "@" + sip_proxy + ":" + sip_proxy_port, 
@@ -383,7 +383,7 @@ function doSipAudioCall(destination) {
 				});
 			},
 			error: function(error) {
-				Janus.error("[SipPreDefined][actuallyDoCall] No SSL on host? WebRTC error...", error);
+				Janus.error("[SipVideoRoom][actuallyDoCall] No SSL on host? WebRTC error...", error);
 			}
 		});
 }
@@ -393,7 +393,7 @@ function doHangup() {
 	let hangup = { 
 		request: "hangup" 
 	};
-	Janus.debug("[SipPreDefined][doHangup] Call hangup...");
+	Janus.debug("[SipVideoRoom][doHangup] Call hangup...");
 	sipcall.send({ message: hangup });
 	sipcall.hangup();
 	window.location.reload();
@@ -401,143 +401,5 @@ function doHangup() {
 
 
 function startVideo() {
-	Janus.debug("[SipPreDefined][startVideo] Starting new plugin...");
-
-	janus.attach({
-		plugin: "janus.plugin.echotest",
-		opaqueId: echoOpaqueId,
-		success: function(pluginHandle) {
-			echotest = pluginHandle;
-			Janus.log("[SipPreDefined][startVideo] Echo plugin attached! (" + echotest.getPlugin() + ", id=" + echotest.getId() + ")");
-			// Negotiate WebRTC
-			var body = { 
-				audio: false, 
-				video: true 
-			};
-			Janus.debug("[SipPreDefined][startVideo] Sending message:", body);
-			echotest.send({ message: body });
-			Janus.debug("[SipPreDefined][startVideo] Trying a createOffer too (video sendrecv)");
-
-			echotest.createOffer(
-				{
-					// No media provided: by default, it's sendrecv for audio and video
-					media: { 
-						data: false,
-						video: true,
-						audio: false
-					},
-					success: function(jsep) {
-						Janus.debug("[SipPreDefined][startVideo] Got SDP!", jsep);
-						echotest.send({ message: body, jsep: jsep });
-					},
-					error: function(error) {
-						Janus.error("[SipPreDefined][startVideo] WebRTC error:", error);
-					}
-				});
-		},
-		error: function(error) {
-			console.error("[SipPreDefined][startVideo]  -- Error attaching plugin...", error);
-		},
-		iceState: function(state) {
-			Janus.log("[SipPreDefined][startVideo] ICE state changed to " + state);
-		},
-		mediaState: function(medium, on) {
-			Janus.log("[SipPreDefined][startVideo] Janus " + (on ? "started" : "stopped") + " receiving our " + medium);
-		},
-		webrtcState: function(on) {
-			Janus.log("[SipPreDefined][startVideo] Janus says our WebRTC PeerConnection is " + (on ? "up" : "down") + " now");
-		},
-		slowLink: function(uplink, lost) {
-			Janus.warn("[SipPreDefined][startVideo] Janus reports problems " + (uplink ? "sending" : "receiving") +
-				" packets on this PeerConnection (" + lost + " lost packets)");
-		},
-		onmessage: function(msg, jsep) {
-			Janus.debug("[SipPreDefined][startVideo]  ::: Got a message :::", msg);
-			if(jsep) {
-				Janus.debug("[SipPreDefined][startVideo] Handling SDP as well...", jsep);
-				echotest.handleRemoteJsep({ jsep: jsep });
-			}
-		},
-		onlocalstream: function(stream) {
-			Janus.debug("[SipPreDefined][startVideo] ::: Got a local stream, attaching to #myvideo", stream);
-
-			$('#videoright_echo').append('<video class="rounded centered" id="waitingvideo_echo" width=320 height=240 />');
-
-			$('#videos').removeClass('hide').show();
-
-			// Create video box
-			if($('#myvideo').length === 0) {
-				$('#videoleft').append('<video class="rounded centered" id="myvideo" width=320 height=240 autoplay playsinline muted="muted"/>');
-			}
-
-			Janus.debug("[SipPreDefined] Attaching local stream to #myvideo container");
-			Janus.attachMediaStream($('#myvideo').get(0), stream);
-			
-			$("#myvideo").get(0).muted = "muted";
-			if(sipcall.webrtcStuff.pc.iceConnectionState !== "compvared" &&
-					sipcall.webrtcStuff.pc.iceConnectionState !== "connected") {
-				$("#videoleft").parent().block({
-					message: '<b>Calling...</b>',
-					css: {
-						border: 'none',
-						backgroundColor: 'transparent',
-						color: 'white'
-					}
-				});
-			}
-			let videoTracks = stream.getVideoTracks();
-			if(!videoTracks || videoTracks.length === 0) {
-				// No webcam
-				$('#myvideo').hide();
-				if($('#videoleft .no-video-container').length === 0) {
-					$('#videoleft').append(
-						'<div class="no-video-container">' +
-							'<i class="fa fa-video-camera fa-5 no-video-icon"></i>' +
-							'<span class="no-video-text">No webcam available</span>' +
-						'</div>');
-				}
-			} else {
-				$('#videoleft .no-video-container').remove();
-				$('#myvideo').removeClass('hide').show();
-			}
-
-			// Janus.attachMediaStream($('#myvideo').get(0), stream);
-		},
-		onremotestream: function(stream) {
-			Janus.debug("[SipPreDefined][startVideo] ::: Got a remote stream, attaching to same video...", stream);
-
-			if($('#remotevideo_echo').length === 0) {
-				$('#videoright_echo').append(
-					'<video class="rounded centered hide" id="remotevideo_echo" width=320 height=240 autoplay playsinline/>');
-				// Show the peer and hide the spinner when we get a playing event
-				$("#remotevideo_echo").bind("playing", function () {
-					$('#waitingvideo_echo').remove();
-					if(this.videoWidth)
-						$('#remotevideo_echo').removeClass('hide').show();
-					if(spinner)
-						spinner.stop();
-					spinner = null;
-				});
-			}
-
-			Janus.debug("[SipPreDefined] Attaching remote stream to #remotevideo_echo container");
-			Janus.attachMediaStream($('#remotevideo_echo').get(0), stream);
-			let videoTracks = stream.getVideoTracks();
-
-			if(!videoTracks || videoTracks.length === 0) {
-				// No remote video
-				$('#remotevideo_echo').hide();
-				if($('#videoright_echo .no-video-container').length === 0) {
-					$('#videoright_echo').append(
-						'<div class="no-video-container">' +
-							'<i class="fa fa-video-camera fa-5 no-video-icon"></i>' +
-							'<span class="no-video-text">No remote video available</span>' +
-						'</div>');
-				}
-			} else {
-				$('#videoright_echo .no-video-container').remove();
-				$('#remotevideo_echo').removeClass('hide').show();
-			}
-		}
-	});
+	Janus.debug("[SipVideoRoom][startVideo] Starting new plugin...");
 }
