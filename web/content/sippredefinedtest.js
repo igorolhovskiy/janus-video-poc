@@ -353,7 +353,7 @@ function registerUsername(account) {
 		authuser: account,
 		display_name: "Test " + account,
 		secret: account,
-		proxy: "sip" + sip_proxy + ":" + sip_proxy_port,
+		proxy: "sip:" + sip_proxy + ":" + sip_proxy_port,
 	};
 
 	sipcall.send({ message: register });

@@ -151,7 +151,7 @@ function JanusProcess(account, callback) {
 						},
 						webrtcState: function(on) {
 							Janus.log("[SipVideoRoom] Janus says our WebRTC PeerConnection is " + (on ? "up" : "down") + " now");
-							$("#videoleft").parent().unblock();
+							$("#audiolocal").parent().unblock();
 						},
 						onmessage: function(msg, jsep) {
 							Janus.debug("[SipVideoRoom] ::: Got a message :::", msg);
@@ -240,88 +240,65 @@ function JanusProcess(account, callback) {
 						},
 // Local Stream part						
 						onlocalstream: function(stream) {
-							Janus.debug("[SipVideoRoom] ::: Got a local stream :::", stream);
-							$('#videos').removeClass('hide').show();
+							Janus.debug("[SipVideoRoom] ::: Got a local audio stream, doing nothing", stream);
+							//$('#videos').removeClass('hide').show();
 
 							// Create video box
-							if($('#myvideo').length === 0) {
-								$('#videoleft').append('<video class="rounded centered" id="myvideo" width=320 height=240 autoplay playsinline muted="muted"/>');
-							}
+							// if($('#myaudio').length === 0) {
+							// 	$('#audiolocal').append('<video class="rounded centered" id="myvideo" width=320 height=240 autoplay playsinline muted="muted"/>');
+							// }
 
-							Janus.debug("[SipVideoRoom] Attaching local stream to #myvideo container");
 							// Janus.attachMediaStream($('#myvideo').get(0), stream);
 							
-							$("#myvideo").get(0).muted = "muted";
-							if(sipcall.webrtcStuff.pc.iceConnectionState !== "compvared" &&
-									sipcall.webrtcStuff.pc.iceConnectionState !== "connected") {
-								$("#videoleft").parent().block({
-									message: '<b>Calling...</b>',
-									css: {
-										border: 'none',
-										backgroundColor: 'transparent',
-										color: 'white'
-									}
-								});
-								// No remote video yet
-								$('#videoright').append('<video class="rounded centered" id="waitingvideo" width=320 height=240 />');
-								if(spinner == null) {
-									let target = document.getElementById('videoright');
-									spinner = new Spinner({top:100}).spin(target);
-								} else {
-									spinner.spin();
-								}
-							}
-							let videoTracks = stream.getVideoTracks();
-							if(!videoTracks || videoTracks.length === 0) {
-								// No webcam
-								$('#myvideo').hide();
-								if($('#videoleft .no-video-container').length === 0) {
-									$('#videoleft').append(
-										'<div class="no-video-container">' +
-											'<i class="fa fa-video-camera fa-5 no-video-icon"></i>' +
-											'<span class="no-video-text">No webcam available</span>' +
-										'</div>');
-								}
-							} else {
-								$('#videoleft .no-video-container').remove();
-								$('#myvideo').removeClass('hide').show();
-							}
+							// $("#myvideo").get(0).muted = "muted";
+							// if(sipcall.webrtcStuff.pc.iceConnectionState !== "compvared" &&
+							// 		sipcall.webrtcStuff.pc.iceConnectionState !== "connected") {
+							// 	$("#videoleft").parent().block({
+							// 		message: '<b>Calling...</b>',
+							// 		css: {
+							// 			border: 'none',
+							// 			backgroundColor: 'transparent',
+							// 			color: 'white'
+							// 		}
+							// 	});
+							// 	// No remote video yet
+							// 	$('#videoright').append('<video class="rounded centered" id="waitingvideo" width=320 height=240 />');
+							// 	if(spinner == null) {
+							// 		let target = document.getElementById('videoright');
+							// 		spinner = new Spinner({top:100}).spin(target);
+							// 	} else {
+							// 		spinner.spin();
+							// 	}
+							// }
+							// let videoTracks = stream.getVideoTracks();
+							// if(!videoTracks || videoTracks.length === 0) {
+							// 	// No webcam
+							// 	$('#myvideo').hide();
+							// 	if($('#videoleft .no-video-container').length === 0) {
+							// 		$('#videoleft').append(
+							// 			'<div class="no-video-container">' +
+							// 				'<i class="fa fa-video-camera fa-5 no-video-icon"></i>' +
+							// 				'<span class="no-video-text">No webcam available</span>' +
+							// 			'</div>');
+							// 	}
+							// } else {
+							// 	$('#videoleft .no-video-container').remove();
+							// 	$('#myvideo').removeClass('hide').show();
+							// }
 						},
 // Remote stream part
 						onremotestream: function(stream) {
-							Janus.debug("[SipVideoRoom] ::: Got a remote stream :::", stream);
-							if($('#remotevideo').length === 0) {
-								$('#videoright').append(
-									'<video class="rounded centered hide" id="remotevideo" width=1 height=1 autoplay playsinline/>');
-								// Show the peer and hide the spinner when we get a playing event
-								$("#remotevideo").bind("playing", function () {
-									$('#waitingvideo').remove();
-									if(this.videoWidth)
-										$('#remotevideo').removeClass('hide').show();
-									if(spinner)
-										spinner.stop();
-									spinner = null;
-								});
+							Janus.debug("[SipVideoRoom] ::: Got a remote audio stream :::", stream);
+							
+							$('#audioremote').removeClass('hide').show();
+							if($('#remoteaudio').length === 0) {
+								$('#audioremote').append(
+									'<audio class="rounded centered" id="remoteaudio" autoplay/>'
+								);
 							}
 
-							Janus.debug("[SipVideoRoom] Attaching remote stream to #remotevideo container");
-							Janus.attachMediaStream($('#remotevideo').get(0), stream);
-							let videoTracks = stream.getVideoTracks();
-
-							if(!videoTracks || videoTracks.length === 0) {
-								// No remote video
-								$('#remotevideo').hide();
-								if($('#videoright .no-video-container').length === 0) {
-									$('#videoright').append(
-										'<div class="no-video-container">' +
-											'<i class="fa fa-video-camera fa-5 no-video-icon"></i>' +
-											'<span class="no-video-text">No remote video available</span>' +
-										'</div>');
-								}
-							} else {
-								$('#videoright .no-video-container').remove();
-								$('#remotevideo').removeClass('hide').show();
-							}
+							Janus.debug("[SipVideoRoom] Attaching remote stream to #remoteaudio container");
+							Janus.attachMediaStream($('#remoteaudio').get(0), stream);
 
 							// Show video button
 							$('#videostart').removeClass('hidden').click(startVideo);
@@ -353,7 +330,7 @@ function registerUsername(account) {
 		authuser: account,
 		display_name: "Test " + account,
 		secret: account,
-		proxy: "sip" + sip_proxy + ":" + sip_proxy_port,
+		proxy: "sip:" + sip_proxy + ":" + sip_proxy_port,
 	};
 
 	sipcall.send({ message: register });
@@ -403,6 +380,7 @@ function doHangup() {
 function startVideo() {
 	Janus.debug("[SipVideoRoom][startVideo] Starting videoRoom plugin...");
 	// Attach to VideoRoom plugin
+	return;
 	janus.attach(
 		{
 			plugin: "janus.plugin.videoroom",
