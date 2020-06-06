@@ -65,6 +65,7 @@ let janus = null,
 	mystream = null,
 	// We use this other ID just to map our subscriptions to us
 	mypvtid = null,
+	is_video_started = false,
 
 	sipOpaqueId = "sipvideoroom-" + Janus.randomString(12),
 	videoroomOpaqueId = "sipvideoroom-" + Janus.randomString(12),
@@ -142,6 +143,12 @@ function JanusProcess(account, callback) {
 						success: function(pluginHandle) {
 							sipcall = pluginHandle;
 							Janus.log("[SipVideoRoom] Plugin attached! (" + sipcall.getPlugin() + ", id=" + sipcall.getId() + ")");
+
+							$("#start_1").hide();
+							$("#start_2").hide();
+							$("#start_3").hide();
+
+							$("#account_name").html("Using account: " + account);
 							
 							// Prepare the username registration
 							registerUsername(account);
@@ -203,7 +210,10 @@ function JanusProcess(account, callback) {
 									Janus.log("[SipVideoRoom] " + result["username"] + " accepted the call!", jsep);
 									// Call can start, now: handle the remote answer
 									if(jsep) {
-										sipcall.handleRemoteJsep({ jsep: jsep, error: doHangup });
+										sipcall.handleRemoteJsep({ 
+											jsep: jsep, 
+											error: doHangup 
+										});
 									}
 									sipcall.callId = callId;
 
@@ -309,7 +319,9 @@ function JanusProcess(account, callback) {
 							Janus.attachMediaStream($('#remoteaudio').get(0), stream);
 
 							// Show video button
-							$('#videostart').removeClass('hidden').click(startVideo(account));
+							$('#videostart').removeClass('hidden').unbind('click').click(() => {
+								startVideo(account);
+							});
 						},
 // End streams part
 						oncleanup: function() {
@@ -386,6 +398,15 @@ function doHangup() {
 
 
 function startVideo(account) {
+
+	if (is_video_started) {
+		Janus.debug("[SipVideoRoom][startVideo] Duplicate Start Video!!! Cannot be here!");
+		return;
+	}
+
+	$("#videostart").hide();
+	is_video_started = false;
+
 	Janus.debug("[SipVideoRoom][startVideo] Starting videoRoom plugin...");
 
 	$('#videos').removeClass('hide').show();
