@@ -43,11 +43,6 @@
 // the whole session.
 //
 
-const sip_proxy = "127.0.0.1",
-	sip_proxy_port = "5061",
-	number_to_dial = "4321", // 4321 for MoH, any other - for ConfBridge
-	videoroom = 1234;
-
 let server = null;
 if(window.location.protocol === 'http:') {
 	server = "http://" + window.location.hostname + ":8088/janus";
@@ -65,7 +60,6 @@ let janus = null,
 	mystream = null,
 	// We use this other ID just to map our subscriptions to us
 	mypvtid = null,
-	is_video_started = false,
 
 	sipOpaqueId = "sipvideoroom-" + Janus.randomString(12),
 	videoroomOpaqueId = "sipvideoroom-" + Janus.randomString(12),
@@ -259,50 +253,6 @@ function JanusProcess(account, callback) {
 // Local Stream part						
 						onlocalstream: function(stream) {
 							Janus.debug("[SipVideoRoom] ::: Got a local audio stream, doing nothing", stream);
-							//$('#videos').removeClass('hide').show();
-
-							// Create video box
-							// if($('#myaudio').length === 0) {
-							// 	$('#audiolocal').append('<video class="rounded centered" id="myvideo" width=320 height=240 autoplay playsinline muted="muted"/>');
-							// }
-
-							// Janus.attachMediaStream($('#myvideo').get(0), stream);
-							
-							// $("#myvideo").get(0).muted = "muted";
-							// if(sipcall.webrtcStuff.pc.iceConnectionState !== "compvared" &&
-							// 		sipcall.webrtcStuff.pc.iceConnectionState !== "connected") {
-							// 	$("#videoleft").parent().block({
-							// 		message: '<b>Calling...</b>',
-							// 		css: {
-							// 			border: 'none',
-							// 			backgroundColor: 'transparent',
-							// 			color: 'white'
-							// 		}
-							// 	});
-							// 	// No remote video yet
-							// 	$('#videoright').append('<video class="rounded centered" id="waitingvideo" width=320 height=240 />');
-							// 	if(spinner == null) {
-							// 		let target = document.getElementById('videoright');
-							// 		spinner = new Spinner({top:100}).spin(target);
-							// 	} else {
-							// 		spinner.spin();
-							// 	}
-							// }
-							// let videoTracks = stream.getVideoTracks();
-							// if(!videoTracks || videoTracks.length === 0) {
-							// 	// No webcam
-							// 	$('#myvideo').hide();
-							// 	if($('#videoleft .no-video-container').length === 0) {
-							// 		$('#videoleft').append(
-							// 			'<div class="no-video-container">' +
-							// 				'<i class="fa fa-video-camera fa-5 no-video-icon"></i>' +
-							// 				'<span class="no-video-text">No webcam available</span>' +
-							// 			'</div>');
-							// 	}
-							// } else {
-							// 	$('#videoleft .no-video-container').remove();
-							// 	$('#myvideo').removeClass('hide').show();
-							// }
 						},
 // Remote stream part
 						onremotestream: function(stream) {
@@ -397,15 +347,19 @@ function doHangup() {
 }
 
 
+// ******************** VIDEO PART **************************
+
+// **********************************************************
+// **********************************************************
+// **********************************************************
+// **********************************************************
+// **********************************************************
+// **********************************************************
+// **********************************************************
+
 function startVideo(account) {
 
-	if (is_video_started) {
-		Janus.debug("[SipVideoRoom][startVideo] Duplicate Start Video!!! Cannot be here!");
-		return;
-	}
-
 	$("#videostart").hide();
-	is_video_started = false;
 
 	Janus.debug("[SipVideoRoom][startVideo] Starting videoRoom plugin...");
 
@@ -446,6 +400,11 @@ function startVideo(account) {
 			},
 			mediaState: function(medium, on) {
 				Janus.log("[SipVideoRoom][startVideo] Janus " + (on ? "started" : "stopped") + " receiving our " + medium);
+				$("#videolocal").parent().parent().unblock();
+				if (!on) {
+					return;
+				}
+				$('#publish').remove();
 			},
 			webrtcState: function(on) {
 				Janus.log("[SipVideoRoom][startVideo] Janus says our WebRTC PeerConnection is " + (on ? "up" : "down") + " now");
@@ -608,7 +567,7 @@ function startVideo(account) {
 				Janus.log("[SipVideoRoom][startVideo] onremotestream > The publisher stream is sendonly, we don't expect anything here");
 			},
 			oncleanup: function() {
-				Janus.log(" ::: Got a cleanup notification: we are unpublished now :::");
+				Janus.log("[SipVideoRoom][startVideo] ::: Got a cleanup notification: we are unpublished now :::");
 				mystream = null;
 				$('#videolocal').html('<button id="publish" class="btn btn-primary">Publish</button>');
 				$('#publish').click(function() { 
