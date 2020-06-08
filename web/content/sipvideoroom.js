@@ -79,7 +79,7 @@ $(document).ready(function() {
 	$('#start_1').click(function() {
 		JanusProcess('700000100001', (err, res) => {
 			if (err) {
-				console.log("[SipVideoRoom] Error: " + err);
+				console.log("[SipVideoRoom][700000100001] Error: " + err);
 				return;
 			}
 			console.log("[SipVideoRoom] " + res);
@@ -89,7 +89,7 @@ $(document).ready(function() {
 	$('#start_2').click(function() {
 		JanusProcess('700000100002', (err, res) => {
 			if (err) {
-				bootbox.alert(err);
+				console.log("[SipVideoRoom][700000100002] Error: " + err);
 				return;
 			}
 			console.log("[SipVideoRoom] " + res);
@@ -99,7 +99,7 @@ $(document).ready(function() {
 	$('#start_3').click(function() {
 		JanusProcess('700000100003', (err, res) => {
 			if (err) {
-				bootbox.alert(err);
+				console.log("[SipVideoRoom][700000100003] Error: " + err);
 				return;
 			}
 			console.log("[SipVideoRoom] " + res);
@@ -199,7 +199,6 @@ function JanusProcess(account, callback) {
 									if(jsep) {
 										sipcall.handleRemoteJsep({ jsep: jsep, error: doHangup });
 									}
-									toastr.info("Early media...");
 								} else if(event === 'accepted') {
 									Janus.log("[SipVideoRoom] " + result["username"] + " accepted the call!", jsep);
 									// Call can start, now: handle the remote answer
@@ -379,7 +378,7 @@ function startVideo(account) {
 
 				let joinRequest = {
 					request: "join",
-					room: videoroom,
+					room: videoroom_number,
 					ptype: "publisher",
 					display: account
 				};
@@ -390,7 +389,6 @@ function startVideo(account) {
 			},
 			error: function(error) {
 				Janus.error("[SipVideoRoom][startVideo]   -- Error attaching plugin...", error);
-				bootbox.alert("[SipVideoRoom][startVideo] Error attaching plugin... " + error);
 			},
 			consentDialog: function(on) {
 				Janus.debug("[SipVideoRoom][startVideo] Consent dialog should be " + (on ? "on" : "off") + " now");
@@ -645,15 +643,16 @@ function newRemoteFeed(id, display, audio, video) {
 			success: function(pluginHandle) {
 				remoteFeed = pluginHandle;
 				remoteFeed.simulcastStarted = false;
-				Janus.log("Plugin attached! (" + remoteFeed.getPlugin() + ", id=" + remoteFeed.getId() + ")");
-				Janus.log("  -- This is a subscriber");
+				Janus.log("[SipVideoRoom][newRemoteFeed] Plugin attached! (" + remoteFeed.getPlugin() + ", id=" + remoteFeed.getId() + ")");
+				Janus.log("[SipVideoRoom][newRemoteFeed]   -- This is a subscriber");
 				// We wait for the plugin to send us an offer
 				let subscribe = {
 					request: "join",
-					room: videoroom,
+					room: videoroom_number,
 					ptype: "subscriber",
 					feed: id,
-					private_id: mypvtid
+					private_id: mypvtid,
+					offer_audio: false // We don't want to receive audio
 				};
 				// In case you don't want to receive audio, video or data, even if the
 				// publisher is sending them, set the 'offer_audio', 'offer_video' or
@@ -668,20 +667,25 @@ function newRemoteFeed(id, display, audio, video) {
 						video = video.toUpperCase()
 					}
 					Janus.log("[SipVideoRoom][newRemoteFeed] Publisher is using " + video + ", but Safari doesn't support it: disabling video");
+					
 					subscribe["offer_video"] = false;
 				}
 				remoteFeed.videoCodec = video;
-				remoteFeed.send({ message: subscribe });
+				remoteFeed.send({ 
+					message: subscribe 
+				});
 			},
 			error: function(error) {
 				Janus.error("[SipVideoRoom][newRemoteFeed] -- Error attaching plugin...", error);
 			},
 			onmessage: function(msg, jsep) {
 				Janus.debug("[SipVideoRoom][newRemoteFeed]::: Got a message (subscriber) :::", msg);
+				
 				let event = msg["videoroom"];
-				Janus.debug("Event: " + event);
+				Janus.debug("[SipVideoRoom][newRemoteFeed] Event: " + event);
+
 				if(msg["error"]) {
-					bootbox.alert(msg["error"]);
+					Janus.error("[SipVideoRoom][newRemoteFeed] Error: " + msg["error"]);
 				} else if(event) {
 					if(event === "attached") {
 						// Subscriber created and attached
@@ -737,7 +741,7 @@ function newRemoteFeed(id, display, audio, video) {
 								Janus.debug("[SipVideoRoom][newRemoteFeed] Got SDP!", jsep);
 								let body = { 
 									request: "start", 
-									room: videoroom 
+									room: videoroom_number 
 								};
 								remoteFeed.send({ 
 									message: body, 
@@ -761,9 +765,9 @@ function newRemoteFeed(id, display, audio, video) {
 			},
 			onremotestream: function(stream) {
 				Janus.debug("[SipVideoRoom][newRemoteFeed]  Remote feed #" + remoteFeed.rfindex + ", stream:", stream);
-				let addButtons = false;
+				//let addButtons = false;
 				if($('#remotevideo'+remoteFeed.rfindex).length === 0) {
-					addButtons = true;
+					//addButtons = true;
 					// No remote video yet
 					$('#videoremote'+remoteFeed.rfindex).append('<video class="rounded centered" id="waitingvideo' + remoteFeed.rfindex + '" width=320 height=240 />');
 					$('#videoremote'+remoteFeed.rfindex).append('<video class="rounded centered relative hide" id="remotevideo' + remoteFeed.rfindex + '" width="100%" height="100%" autoplay playsinline/>');
@@ -791,7 +795,9 @@ function newRemoteFeed(id, display, audio, video) {
 						}
 					});
 				}
+
 				Janus.attachMediaStream($('#remotevideo'+remoteFeed.rfindex).get(0), stream);
+
 				let videoTracks = stream.getVideoTracks();
 				if(!videoTracks || videoTracks.length === 0) {
 					// No remote video
