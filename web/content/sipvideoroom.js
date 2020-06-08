@@ -61,6 +61,8 @@ let janus = null,
 	// We use this other ID just to map our subscriptions to us
 	mypvtid = null,
 
+	videofeeds = [],
+
 	sipOpaqueId = "sipvideoroom-" + Janus.randomString(12),
 	videoroomOpaqueId = "sipvideoroom-" + Janus.randomString(12),
 
@@ -181,7 +183,7 @@ function JanusProcess(account, callback) {
 									Janus.log("[SipVideoRoom] Successfully registered as " + result["username"] + ", calling...");
 
 									// Time to make a call to ConfBridge!
-									doSipAudioCall(number_to_dial); 
+									doSipAudioCall(number_to_dial_videoroom); 
 
 								} else if(event === 'calling') {
 									Janus.log("[SipVideoRoom] Waiting for the peer to answer...");
@@ -457,8 +459,8 @@ function startVideo(account) {
 							Janus.log("[SipVideoRoom][startVideo] Publisher left: " + leaving);
 							let remoteFeed = null;
 							for(let i=1; i<6; i++) {
-								if(feeds[i] && feeds[i].rfid == leaving) {
-									remoteFeed = feeds[i];
+								if(videofeeds[i] && videofeeds[i].rfid == leaving) {
+									remoteFeed = videofeeds[i];
 									break;
 								}
 							}
@@ -466,7 +468,7 @@ function startVideo(account) {
 								Janus.debug("[SipVideoRoom][startVideo] Feed " + remoteFeed.rfid + " (" + remoteFeed.rfdisplay + ") has left the room, detaching");
 								$('#remote'+remoteFeed.rfindex).empty().hide();
 								$('#videoremote'+remoteFeed.rfindex).empty();
-								feeds[remoteFeed.rfindex] = null;
+								videofeeds[remoteFeed.rfindex] = null;
 								remoteFeed.detach();
 							}
 						} else if(msg["unpublished"]) {
@@ -480,8 +482,8 @@ function startVideo(account) {
 							}
 							let remoteFeed = null;
 							for(let i=1; i < 6; i++) {
-								if(feeds[i] && feeds[i].rfid == unpublished) {
-									remoteFeed = feeds[i];
+								if(videofeeds[i] && videofeeds[i].rfid == unpublished) {
+									remoteFeed = videofeeds[i];
 									break;
 								}
 							}
@@ -489,7 +491,7 @@ function startVideo(account) {
 								Janus.debug("[SipVideoRoom][startVideo] Feed " + remoteFeed.rfid + " (" + remoteFeed.rfdisplay + ") has left the room, detaching");
 								$('#remote'+remoteFeed.rfindex).empty().hide();
 								$('#videoremote'+remoteFeed.rfindex).empty();
-								feeds[remoteFeed.rfindex] = null;
+								videofeeds[remoteFeed.rfindex] = null;
 								remoteFeed.detach();
 							}
 						} else if(msg["error"]) {
@@ -529,7 +531,7 @@ function startVideo(account) {
 					$('#videolocal').append('<button class="btn btn-warning btn-xs" id="unpublish" style="position: absolute; bottom: 0px; right: 0px; margin: 15px;">Unpublish</button>');
 					$('#unpublish').click(unpublishOwnFeed);
 				}
-				$('#publisher').removeClass('hide').show();
+				$('#publisher').removeClass('hide').html(account).show();
 
 				Janus.attachMediaStream($('#myvideo').get(0), stream);
 
@@ -667,7 +669,7 @@ function newRemoteFeed(id, display, audio, video) {
 						video = video.toUpperCase()
 					}
 					Janus.log("[SipVideoRoom][newRemoteFeed] Publisher is using " + video + ", but Safari doesn't support it: disabling video");
-					
+
 					subscribe["offer_video"] = false;
 				}
 				remoteFeed.videoCodec = video;
@@ -690,8 +692,8 @@ function newRemoteFeed(id, display, audio, video) {
 					if(event === "attached") {
 						// Subscriber created and attached
 						for(let i=1;i<6;i++) {
-							if(!feeds[i]) {
-								feeds[i] = remoteFeed;
+							if(!videofeeds[i]) {
+								videofeeds[i] = remoteFeed;
 								remoteFeed.rfindex = i;
 								break;
 							}
@@ -708,18 +710,6 @@ function newRemoteFeed(id, display, audio, video) {
 						$('#remote'+remoteFeed.rfindex).removeClass('hide').html(remoteFeed.rfdisplay).show();
 					} else if(event === "event") {
 						Janus.log("[SipVideoRoom][newRemoteFeed] Got event: " + msg);
-						// Check if we got an event on a simulcast-related event from this publisher
-						// let substream = msg["substream"];
-						// let temporal = msg["temporal"];
-						// if((substream !== null && substream !== undefined) || (temporal !== null && temporal !== undefined)) {
-						// 	if(!remoteFeed.simulcastStarted) {
-						// 		remoteFeed.simulcastStarted = true;
-						// 		// Add some new buttons
-						// 		addSimulcastButtons(remoteFeed.rfindex, remoteFeed.videoCodec === "vp8" || remoteFeed.videoCodec === "h264");
-						// 	}
-						// 	// We just received notice that there's been a switch, update the buttons
-						// 	updateSimulcastButtons(remoteFeed.rfindex, substream, temporal);
-						// }
 					} else {
 						Janus.log("[SipVideoRoom][newRemoteFeed] What has just happened?");
 						// What has just happened?
@@ -813,23 +803,6 @@ function newRemoteFeed(id, display, audio, video) {
 					$('#videoremote'+remoteFeed.rfindex+ ' .no-video-container').remove();
 					$('#remotevideo'+remoteFeed.rfindex).removeClass('hide').show();
 				}
-				// if(!addButtons)
-				// 	return;
-				// if(	Janus.webRTCAdapter.browserDetails.browser === "chrome" 
-				// 	|| Janus.webRTCAdapter.browserDetails.browser === "firefox" 
-				// 	|| Janus.webRTCAdapter.browserDetails.browser === "safari") {
-				// 	$('#curbitrate'+remoteFeed.rfindex).removeClass('hide').show();
-				// 	bitrateTimer[remoteFeed.rfindex] = setInterval(function() {
-				// 		// Display updated bitrate, if supported
-				// 		let bitrate = remoteFeed.getBitrate();
-				// 		$('#curbitrate'+remoteFeed.rfindex).text(bitrate);
-				// 		// Check if the resolution changed too
-				// 		let width = $("#remotevideo"+remoteFeed.rfindex).get(0).videoWidth;
-				// 		let height = $("#remotevideo"+remoteFeed.rfindex).get(0).videoHeight;
-				// 		if(width > 0 && height > 0)
-				// 			$('#curres'+remoteFeed.rfindex).removeClass('hide').text(width+'x'+height).show();
-				// 	}, 1000);
-				// }
 			},
 			oncleanup: function() {
 				Janus.log("[SipVideoRoom][newRemoteFeed] ::: Got a cleanup notification (remote feed " + id + ") :::");
@@ -840,13 +813,6 @@ function newRemoteFeed(id, display, audio, video) {
 				$('#remotevideo'+remoteFeed.rfindex).remove();
 				$('#waitingvideo'+remoteFeed.rfindex).remove();
 				$('#novideo'+remoteFeed.rfindex).remove();
-
-				// $('#curres'+remoteFeed.rfindex).remove();
-				// if(bitrateTimer[remoteFeed.rfindex] !== null && bitrateTimer[remoteFeed.rfindex] !== null)
-				// 	clearInterval(bitrateTimer[remoteFeed.rfindex]);
-				// bitrateTimer[remoteFeed.rfindex] = null;
-				// remoteFeed.simulcastStarted = false;
-				// $('#simulcast'+remoteFeed.rfindex).remove();
 			}
 		});
 }

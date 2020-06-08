@@ -168,7 +168,7 @@ function JanusProcess(account, callback) {
 									Janus.log("[SipPreDefined] Successfully registered as " + result["username"] + ", calling...");
 
 									// Time to make a call to ConfBridge!
-									doSipAudioCall(number_to_dial); 
+									doSipAudioCall(number_to_dial_echo); 
 
 								} else if(event === 'calling') {
 									Janus.log("[SipPreDefined] Waiting for the peer to answer...");
