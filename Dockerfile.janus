@@ -26,6 +26,7 @@ RUN apt-get update \
         python3-wheel \
         ninja-build \
         curl \
+        cmake \
     && cd /opt \
     && LIBSRTP_VER=$(curl --silent "https://github.com/cisco/libsrtp/releases/latest" | sed 's#.*tag/\(.*\)\".*#\1#') \
     && wget https://github.com/cisco/libsrtp/archive/${LIBSRTP_VER}.tar.gz \
@@ -41,6 +42,14 @@ RUN apt-get update \
     && /usr/local/bin/meson --prefix=/usr build \
     && ninja -C build \
     && ninja -C build install \
+    && cd /opt \
+    && git clone -b v4.0-stable https://libwebsockets.org/repo/libwebsockets \
+    && cd libwebsockets \
+    && mkdir build \
+    && cd build \
+    && cmake -DLWS_MAX_SMP=1 -DCMAKE_INSTALL_PREFIX:PATH=/usr -DCMAKE_C_FLAGS="-fpic" .. \
+    && make \
+    && make install \
     && cd /opt \
     && git clone https://github.com/meetecho/janus-gateway.git \
     && cd janus-gateway \
