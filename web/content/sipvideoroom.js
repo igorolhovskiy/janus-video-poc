@@ -965,7 +965,7 @@ function startScreenShare(account) {
 										for(let f in list) {
 											let id = list[f]["id"];
 											let display = list[f]["display"];
-											Janus.debug("  >> [" + id + "] " + display);
+											Janus.debug("[SipVideoRoom][startScreenShare] >> [" + id + "] " + display);
 											newRemoteScreen(id, display)
 										}
 									} else if(msg["leaving"]) {
@@ -973,9 +973,7 @@ function startScreenShare(account) {
 										let leaving = msg["leaving"];
 										Janus.log("[SipVideoRoom][startScreenShare] Publisher left: " + leaving);
 										if(roleScreenShare === "listener" && msg["leaving"] === source) {
-											bootbox.alert("The screen sharing session is over, the publisher left", function() {
-												window.location.reload();
-											});
+											Janus.debug("[SipVideoRoom][startScreenShare] >> The screen sharing session is over, the publisher left");
 										}
 									} else if(msg["error"]) {
 										Janus.error("[SipVideoRoom][startScreenShare] Error: " + msg['error']);
@@ -1138,7 +1136,7 @@ function newRemoteScreen(id, display) {
 				Janus.attachMediaStream($('#screenvideo').get(0), stream);
 			},
 			oncleanup: function() {
-				Janus.log(" ::: Got a cleanup notification (remote feed " + id + ") :::");
+				Janus.log("The screen sharing session is over, the publisher left ::: Got a cleanup notification (remote feed " + id + ") :::");
 				$('#waitingvideo').remove();
 				if(spinner) {
 					spinner.stop();
