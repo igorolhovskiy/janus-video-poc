@@ -74,7 +74,7 @@ room-1234: {
 room-5678: {
         description = "Demo ScreenShare Room"
         secret = "adminpwd"
-        publishers = 1
+        publishers = 6
         bitrate = 500000
         fir_freq = 10
         #audiocodec = "opus"

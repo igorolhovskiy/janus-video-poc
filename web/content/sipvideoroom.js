@@ -849,9 +849,7 @@ function newRemoteFeed(id, display, audio, video) {
 function startScreenShare(account) {
 	Janus.debug("[SipVideoRoom][startScreenShare] Screen Share starting, trying new Janus...");
 
-	$("#screesharingstart").html("Start My ScreenShare").unbind("click").click(() => {
-		shareScreen(account);
-	});
+	roleScreenShare = "listener"; // At first - we are all listeners
 
 	janus_wss = new Janus({
 			server: server_wss,
@@ -865,6 +863,8 @@ function startScreenShare(account) {
 							screentest = pluginHandle_wss;
 
 							Janus.log("[SipVideoRoom][startScreenShare] WSS Plugin attached! (" + screentest.getPlugin() + ", id=" + screentest.getId() + ")");
+
+							joinScreenShare(account);
 
 							$('#screesharingarea').removeClass('hide').show();
 						},
@@ -916,35 +916,13 @@ function startScreenShare(account) {
 								if(event === "joined") {
 									myid = msg["id"];
 
-									$('#screensharesession').html(account);
-
 									Janus.log("[SipVideoRoom][startScreenShare] Successfully joined room " + msg["room"] + " with ID " + myid);
-									if(roleScreenShare === "publisher") {
-										// This is our session, publish our stream
-										Janus.debug("[SipVideoRoom][startScreenShare] Negotiating WebRTC stream for our screen");
-										screentest.createOffer({
-												media: { 
-													video: "screen", 
-													audioSend: false, 
-													videoRecv: false
-												},	// Screen sharing Publishers are sendonly
-												success: function(jsep) {
-													Janus.debug("[SipVideoRoom][startScreenShare] Got publisher SDP!", jsep);
-													let publish = { 
-														request: "configure", 
-														audio: false, 
-														video: true 
-													};
-													screentest.send({ 
-														message: publish, 
-														jsep: jsep 
-													});
-												},
-												error: function(error) {
-													Janus.error("[SipVideoRoom][startScreenShare] WebRTC error:", error);
-												}
-											});
-									} else {
+									
+									$("#screesharingstart").html("Start My ScreenShare").unbind("click").click(() => {
+										shareOwnScreen(account);
+									});
+
+									if(roleScreenShare !== "publisher") {
 										// We're just watching a session, any feed to attach to?
 										if(msg["publishers"]) {
 											let list = msg["publishers"];
@@ -956,6 +934,8 @@ function startScreenShare(account) {
 												newRemoteScreen(id, display)
 											}
 										}
+									} else {
+										shareOwnScreen(account);
 									}
 								} else if(event === "event") {
 									// Any feed to attach to?
@@ -975,6 +955,14 @@ function startScreenShare(account) {
 										if(roleScreenShare === "listener" && msg["leaving"] === source) {
 											Janus.debug("[SipVideoRoom][startScreenShare] >> The screen sharing session is over, the publisher left");
 										}
+									} else if (msg["left"]) {
+										Janus.debug("[SipVideoRoom][startScreenShare] Got LEFT event");
+										// Re-join as a publisher!
+										if (roleScreenShare === 'publisher') {
+											Janus.debug("[SipVideoRoom][startScreenShare] Re-join as a publisher!");
+											joinScreenShare(account);
+										}
+
 									} else if(msg["error"]) {
 										Janus.error("[SipVideoRoom][startScreenShare] Error: " + msg['error']);
 									}
@@ -1030,8 +1018,7 @@ function startScreenShare(account) {
 }
 
 
-function shareScreen(account) {
-	roleScreenShare = "publisher";
+function joinScreenShare(account) {
 
 	Janus.log("[SipVideoRoom][shareScreen] Screen sharing using room: " + screenshare_room);
 
@@ -1045,6 +1032,48 @@ function shareScreen(account) {
 		message: join 
 	});
 }
+
+function preShareOwnScreen() {
+	roleScreenShare = "publisher";
+
+	let leave = {
+		reqeuest: "leave"
+	};
+
+	screentest.send({
+		message: leave
+	});
+}
+
+
+function shareOwnScreen(account) {
+	Janus.debug("[SipVideoRoom][startScreenShare] Negotiating WebRTC stream for our screen");
+
+	$('#screensharesession').html(account);
+
+	screentest.createOffer({
+		media: { 
+			video: "screen", 
+			audioSend: false, 
+			videoRecv: false
+		},	// Screen sharing Publishers are sendonly
+		success: function(jsep) {
+			Janus.debug("[SipVideoRoom][startScreenShare] Got publisher SDP!", jsep);
+			let publish = { 
+				request: "configure", 
+				audio: false, 
+				video: true 
+			};
+			screentest.send({ 
+				message: publish, 
+				jsep: jsep 
+			});
+		},
+		error: function(error) {
+			Janus.error("[SipVideoRoom][startScreenShare] WebRTC error:", error);
+		}
+	});
+}	
 
 function newRemoteScreen(id, display) {
 	// A new feed has been published, create a new plugin handle and attach to it as a listener
