@@ -88,7 +88,7 @@ let janus = null,
 	incoming = null,
 
 	// ScreenSharing related stuff
-	roleScreenShare = null;
+	screenShareRole = null;
 
 $(document).ready(function() {
 
@@ -180,7 +180,7 @@ function JanusProcess(account, callback) {
 							$("#audiolocal").parent().unblock();
 						},
 						onmessage: function(msg, jsep) {
-							Janus.debug("[SipVideoRoom] ::: Got a message :::", msg);
+							Janus.log("[SipVideoRoom] ::: Got a message :::", msg);
 							// Any error?
 							if(msg["error"]) {
 								callback("[SipVideoRoom] Message error: " + msg["error"], null);
@@ -238,7 +238,7 @@ function JanusProcess(account, callback) {
 											jsep: jsep,
 											media: { audio: doAudio, video: doVideo },
 											success: function(jsep) {
-												Janus.debug("[SipVideoRoom] Got SDP " + jsep.type + "! audio=" + doAudio + ", video=" + doVideo + ":", jsep);
+												Janus.log("[SipVideoRoom] Got SDP " + jsep.type + "! audio=" + doAudio + ", video=" + doVideo + ":", jsep);
 												let body = { request: "update" };
 												sipcall.send({ message: body, jsep: jsep });
 											},
@@ -267,11 +267,11 @@ function JanusProcess(account, callback) {
 						},
 // Local Stream part						
 						onlocalstream: function(stream) {
-							Janus.debug("[SipVideoRoom] ::: Got a local audio stream, doing nothing", stream);
+							Janus.log("[SipVideoRoom] ::: Got a local audio stream, doing nothing", stream);
 						},
 // Remote stream part
 						onremotestream: function(stream) {
-							Janus.debug("[SipVideoRoom] ::: Got a remote audio stream :::", stream);
+							Janus.log("[SipVideoRoom] ::: Got a remote audio stream :::", stream);
 							
 							$('#audioremote').removeClass('hide').show();
 							if($('#remoteaudio').length === 0) {
@@ -280,7 +280,7 @@ function JanusProcess(account, callback) {
 								);
 							}
 
-							Janus.debug("[SipVideoRoom] Attaching remote stream to #remoteaudio container");
+							Janus.log("[SipVideoRoom] Attaching remote stream to #remoteaudio container");
 							Janus.attachMediaStream($('#remoteaudio').get(0), stream);
 
 							// Show video button
@@ -340,7 +340,7 @@ function doSipAudioCall(destination) {
 				videoRecv: false		// We DO NOT want video
 			},
 			success: function(jsep) {
-				Janus.debug("[SipVideoRoom] Got SDP!", jsep);
+				Janus.log("[SipVideoRoom] Got SDP!", jsep);
 				let body = { 
 					request: "call", 
 					uri: "sip:" + destination + "@" + sip_proxy + ":" + sip_proxy_port, 
@@ -361,7 +361,7 @@ function doHangup() {
 	let hangup = { 
 		request: "hangup" 
 	};
-	Janus.debug("[SipVideoRoom][doHangup] Call hangup...");
+	Janus.log("[SipVideoRoom][doHangup] Call hangup...");
 	sipcall.send({ message: hangup });
 	sipcall.hangup();
 	window.location.reload();
@@ -382,7 +382,7 @@ function startVideo(account) {
 
 	$("#videostart").hide();
 
-	Janus.debug("[SipVideoRoom][startVideo] Starting videoRoom plugin...");
+	Janus.log("[SipVideoRoom][startVideo] Starting videoRoom plugin...");
 
 	$('#videos').removeClass('hide').show();
 
@@ -413,7 +413,7 @@ function startVideo(account) {
 				Janus.error("[SipVideoRoom][startVideo]   -- Error attaching plugin...", error);
 			},
 			consentDialog: function(on) {
-				Janus.debug("[SipVideoRoom][startVideo] Consent dialog should be " + (on ? "on" : "off") + " now");
+				Janus.log("[SipVideoRoom][startVideo] Consent dialog should be " + (on ? "on" : "off") + " now");
 			},
 			iceState: function(state) {
 				Janus.log("[SipVideoRoom][startVideo] ICE state changed to " + state);
@@ -430,10 +430,10 @@ function startVideo(account) {
 				Janus.log("[SipVideoRoom][startVideo] Janus says our WebRTC PeerConnection is " + (on ? "up" : "down") + " now");
 			},
 			onmessage: function(msg, jsep) {
-				Janus.debug("[SipVideoRoom][startVideo] ::: Got a message (publisher) :::", msg);
+				Janus.log("[SipVideoRoom][startVideo] ::: Got a message (publisher) :::", msg);
 				
 				let event = msg["videoroom"];
-				Janus.debug("[SipVideoRoom][startVideo] Event: " + event);
+				Janus.log("[SipVideoRoom][startVideo] Event: " + event);
 
 				if(event) {
 					if(event === "joined") {
@@ -447,13 +447,13 @@ function startVideo(account) {
 						// Any new feed to attach to?
 						if(msg["publishers"]) {
 							let list = msg["publishers"];
-							Janus.debug("[SipVideoRoom][startVideo] Got a list of available publishers/feeds:", list);
+							Janus.log("[SipVideoRoom][startVideo] Got a list of available publishers/feeds:", list);
 							for(let f in list) {
 								let id = list[f]["id"];
 								let display = list[f]["display"];
 								let audio = list[f]["audio_codec"];
 								let video = list[f]["video_codec"];
-								Janus.debug("[SipVideoRoom][startVideo]   >> [" + id + "] " + display + " (audio: " + audio + ", video: " + video + ")");
+								Janus.log("[SipVideoRoom][startVideo]   >> [" + id + "] " + display + " (audio: " + audio + ", video: " + video + ")");
 								newRemoteFeed(id, display, audio, video);
 							}
 						}
@@ -464,13 +464,13 @@ function startVideo(account) {
 						// Any new feed to attach to?
 						if(msg["publishers"]) {
 							let list = msg["publishers"];
-							Janus.debug("[SipVideoRoom][startVideo] Got a list of available publishers/feeds:", list);
+							Janus.log("[SipVideoRoom][startVideo] Got a list of available publishers/feeds:", list);
 							for(let f in list) {
 								let id = list[f]["id"];
 								let display = list[f]["display"];
 								let audio = list[f]["audio_codec"];
 								let video = list[f]["video_codec"];
-								Janus.debug("  >> [" + id + "] " + display + " (audio: " + audio + ", video: " + video + ")");
+								Janus.log("  >> [" + id + "] " + display + " (audio: " + audio + ", video: " + video + ")");
 								newRemoteFeed(id, display, audio, video);
 							}
 						} else if(msg["leaving"]) {
@@ -485,7 +485,7 @@ function startVideo(account) {
 								}
 							}
 							if(remoteFeed != null) {
-								Janus.debug("[SipVideoRoom][startVideo] Feed " + remoteFeed.rfid + " (" + remoteFeed.rfdisplay + ") has left the room, detaching");
+								Janus.log("[SipVideoRoom][startVideo] Feed " + remoteFeed.rfid + " (" + remoteFeed.rfdisplay + ") has left the room, detaching");
 								$('#remote'+remoteFeed.rfindex).empty().hide();
 								$('#videoremote'+remoteFeed.rfindex).empty();
 								videofeeds[remoteFeed.rfindex] = null;
@@ -508,7 +508,7 @@ function startVideo(account) {
 								}
 							}
 							if(remoteFeed != null) {
-								Janus.debug("[SipVideoRoom][startVideo] Feed " + remoteFeed.rfid + " (" + remoteFeed.rfdisplay + ") has left the room, detaching");
+								Janus.log("[SipVideoRoom][startVideo] Feed " + remoteFeed.rfid + " (" + remoteFeed.rfdisplay + ") has left the room, detaching");
 								$('#remote'+remoteFeed.rfindex).empty().hide();
 								$('#videoremote'+remoteFeed.rfindex).empty();
 								videofeeds[remoteFeed.rfindex] = null;
@@ -520,7 +520,7 @@ function startVideo(account) {
 					}
 				}
 				if(jsep) {
-					Janus.debug("[SipVideoRoom][startVideo] Handling SDP as well...", jsep);
+					Janus.log("[SipVideoRoom][startVideo] Handling SDP as well...", jsep);
 					videocall.handleRemoteJsep({ 
 						jsep: jsep 
 					});
@@ -541,7 +541,7 @@ function startVideo(account) {
 			},
 			onlocalstream: function(stream) {
 				
-				Janus.debug("[SipVideoRoom][startVideo]  ::: Got a local stream :::", stream);
+				Janus.log("[SipVideoRoom][startVideo]  ::: Got a local stream :::", stream);
 				
 				mystream = stream;
 				$('#videos').removeClass('hide').show();
@@ -601,8 +601,7 @@ function startVideo(account) {
 
 function publishOwnFeed() {
 
-	videocall.createOffer(
-		{
+	videocall.createOffer({
 			// Add data:true here if you want to publish datachannels as well
 			media: { 
 				audioRecv: false, 
@@ -615,7 +614,7 @@ function publishOwnFeed() {
 			// the following 'simulcast' property to pass to janus.js to true
 
 			success: function(jsep) {
-				Janus.debug("[SipVideoRoom][startVideo] publishOwnFeed Got publisher SDP!", jsep);
+				Janus.log("[SipVideoRoom][publishOwnFeed][success] publishOwnFeed Got publisher SDP!", jsep);
 				let publish = { 
 					request: "configure", 
 					audio: false, 
@@ -699,10 +698,10 @@ function newRemoteFeed(id, display, audio, video) {
 				Janus.error("[SipVideoRoom][newRemoteFeed] -- Error attaching plugin...", error);
 			},
 			onmessage: function(msg, jsep) {
-				Janus.debug("[SipVideoRoom][newRemoteFeed]::: Got a message (subscriber) :::", msg);
+				Janus.log("[SipVideoRoom][newRemoteFeed]::: Got a message (subscriber) :::", msg);
 				
 				let event = msg["videoroom"];
-				Janus.debug("[SipVideoRoom][newRemoteFeed] Event: " + event);
+				Janus.log("[SipVideoRoom][newRemoteFeed] Event: " + event);
 
 				if(msg["error"]) {
 					Janus.error("[SipVideoRoom][newRemoteFeed] Error: " + msg["error"]);
@@ -734,7 +733,7 @@ function newRemoteFeed(id, display, audio, video) {
 					}
 				}
 				if(jsep) {
-					Janus.debug("[SipVideoRoom][newRemoteFeed] Handling SDP as well...", jsep);
+					Janus.log("[SipVideoRoom][newRemoteFeed] Handling SDP as well...", jsep);
 					// Answer and attach
 					remoteFeed.createAnswer(
 						{
@@ -746,7 +745,7 @@ function newRemoteFeed(id, display, audio, video) {
 								videoSend: false 
 							},	// We want recvonly audio/video
 							success: function(jsep) {
-								Janus.debug("[SipVideoRoom][newRemoteFeed] Got SDP!", jsep);
+								Janus.log("[SipVideoRoom][newRemoteFeed] Got SDP!", jsep);
 								let body = { 
 									request: "start", 
 									room: videoroom_number 
@@ -772,7 +771,7 @@ function newRemoteFeed(id, display, audio, video) {
 				// The subscriber stream is recvonly, we don't expect anything here
 			},
 			onremotestream: function(stream) {
-				Janus.debug("[SipVideoRoom][newRemoteFeed]  Remote feed #" + remoteFeed.rfindex + ", stream:", stream);
+				Janus.log("[SipVideoRoom][newRemoteFeed]  Remote feed #" + remoteFeed.rfindex + ", stream:", stream);
 				//let addButtons = false;
 				if($('#remotevideo'+remoteFeed.rfindex).length === 0) {
 					//addButtons = true;
@@ -849,9 +848,9 @@ function newRemoteFeed(id, display, audio, video) {
 
 
 function startScreenShare(account) {
-	Janus.debug("[SipVideoRoom][startScreenShare] Screen Share starting, trying new Janus...");
+	Janus.log("[SipVideoRoom][startScreenShare] Screen Share starting, trying new Janus...");
 
-	roleScreenShare = "listener"; // At first - we are all listeners
+	screenShareRole = "listener"; // At first - we are all listeners
 
 	janus_wss = new Janus({
 			server: server_wss,
@@ -874,30 +873,16 @@ function startScreenShare(account) {
 						Janus.error("[SipVideoRoom][startScreenShare] WSS Error attaching plugin...", error);
 					},
 					consentDialog: function(on) {
-						Janus.debug("[SipVideoRoom][startScreenShare] WSS Consent dialog should be " + (on ? "on" : "off") + " now");
-						// if(on) {
-						// 	// Darken screen
-						// 	$.blockUI({
-						// 		message: '',
-						// 		css: {
-						// 			border: 'none',
-						// 			padding: '15px',
-						// 			backgroundColor: 'transparent',
-						// 			color: '#aaa'
-						// 		} });
-						// } else {
-						// 	// Restore screen
-						// 	$.unblockUI();
-						// }
+						Janus.log("[SipVideoRoom][startScreenShare] WSS Consent dialog should be " + (on ? "on" : "off") + " now");
 					},
 					iceState: function(state) {
-						Janus.log("[SipVideoRoom][startScreenShare] WSS ICE state changed to " + state);
+						Janus.log("[SipVideoRoom][startScreenShare][iceState] WSS ICE state changed to " + state);
 					},
 					mediaState: function(medium, on) {
-						Janus.log("[SipVideoRoom][startScreenShare] WSS Janus " + (on ? "started" : "stopped") + " receiving our " + medium);
+						Janus.log("[SipVideoRoom][startScreenShare][mediaState] WSS Janus " + (on ? "started" : "stopped") + " receiving our " + medium);
 					},
 					webrtcState: function(on) {
-						Janus.log("[SipVideoRoom][startScreenShare] WSS Janus says our WebRTC PeerConnection is " + (on ? "up" : "down") + " now");
+						Janus.log("[SipVideoRoom][startScreenShare][webrtcState] WSS Janus says our WebRTC PeerConnection is " + (on ? "up" : "down") + " now");
 
 						$("#screencapture").parent().unblock();
 
@@ -911,28 +896,28 @@ function startScreenShare(account) {
 						}
 					},
 					onmessage: function(msg, jsep) {
-						Janus.debug("[SipVideoRoom][startScreenShare] WSS  ::: Got a message (publisher) :::", msg);
+						Janus.log("[SipVideoRoom][startScreenShare][onmessage] WSS  ::: Got a message (publisher) :::", msg);
 						let event = msg["videoroom"];
-						Janus.debug("[SipVideoRoom][startScreenShare] WSS Event: " + event);
+						Janus.log("[SipVideoRoom][startScreenShare][onmessage] WSS Event: " + event);
 						if(event) {
 							if(event === "joined") {
 								myid = msg["id"];
 
-								Janus.log("[SipVideoRoom][startScreenShare] Successfully joined room " + msg["room"] + " with ID " + myid);
+								Janus.log("[SipVideoRoom][startScreenShare][onmessage] Successfully joined room " + msg["room"] + " with ID " + myid);
 								
 								$("#screesharingstart").html("Start My ScreenShare").unbind("click").click(() => {
 									shareOwnScreen(account);
 								});
 
-								if(roleScreenShare !== "publisher") {
+								if(screenShareRole !== "publisher") {
 									// We're just watching a session, any feed to attach to?
 									if(msg["publishers"]) {
 										let list = msg["publishers"];
-										Janus.debug("[SipVideoRoom][startScreenShare] Got a list of available publishers/feeds:", list);
+										Janus.log("[SipVideoRoom][startScreenShare][onmessage] Got a list of available publishers/feeds:", list);
 										for(let f in list) {
 											let id = list[f]["id"];
 											let display = list[f]["display"];
-											Janus.debug("[SipVideoRoom][startScreenShare]  >> [" + id + "] " + display);
+											Janus.log("[SipVideoRoom][startScreenShare][onmessage]  >> [" + id + "] " + display);
 											newRemoteScreen(id, display)
 										}
 									}
@@ -941,44 +926,40 @@ function startScreenShare(account) {
 								}
 							} else if(event === "event") {
 								// Any feed to attach to?
-								if(roleScreenShare === "listener" && msg["publishers"]) {
+								if(msg["publishers"]) {
 									let list = msg["publishers"];
-									Janus.debug("[SipVideoRoom][startScreenShare] Got a list of available publishers/feeds:", list);
-									for(let f in list) {
-										let id = list[f]["id"];
-										let display = list[f]["display"];
-										Janus.debug("[SipVideoRoom][startScreenShare] >> [" + id + "] " + display);
-										newRemoteScreen(id, display)
+									Janus.log("[SipVideoRoom][startScreenShare][onmessage] Got a list of available publishers/feeds:", list);
+									if (list.length > 0) { // Only 1 publisher is allowed normally
+										for(let f in list) {
+											let id = list[f]["id"];
+											let display = list[f]["display"];
+											Janus.log("[SipVideoRoom][startScreenShare][onmessage] >> [" + id + "] " + display);
+											newRemoteScreen(id, display)
+										}
 									}
 								} else if(msg["leaving"]) {
 									// One of the publishers has gone away?
 									let leaving = msg["leaving"];
-									Janus.log("[SipVideoRoom][startScreenShare] Publisher left: " + leaving);
-									if(roleScreenShare === "listener" && msg["leaving"] === source) {
-										Janus.debug("[SipVideoRoom][startScreenShare] >> The screen sharing session is over, the publisher left");
+									Janus.log("[SipVideoRoom][startScreenShare][onmessage] Publisher left: " + leaving);
+									if(screenShareRole === "listener" && msg["leaving"] === source) {
+										Janus.log("[SipVideoRoom][startScreenShare][onmessage] >> The screen sharing session is over, the publisher left");
 									}
 								} else if (msg["left"]) {
-									Janus.debug("[SipVideoRoom][startScreenShare] Got LEFT event");
-									// Re-join as a publisher!
-									if (roleScreenShare === 'publisher') {
-										Janus.debug("[SipVideoRoom][startScreenShare] Re-join as a publisher!");
-										joinScreenShare(account);
-									}
-
+									Janus.log("[SipVideoRoom][startScreenShare][onmessage] Got LEFT event");
 								} else if(msg["error"]) {
-									Janus.error("[SipVideoRoom][startScreenShare] Error: " + msg['error']);
+									Janus.error("[SipVideoRoom][startScreenShare][onmessage] Error: " + msg['error']);
 								}
 							}
 						}
 						if(jsep) {
-							Janus.debug("[SipVideoRoom][startScreenShare] Handling SDP as well...", jsep);
+							Janus.log("[SipVideoRoom][startScreenShare] Handling SDP as well...", jsep);
 							screentest.handleRemoteJsep({ 
 								jsep: jsep 
 							});
 						}
 					},
 					onlocalstream: function(stream) {
-						Janus.debug("[SipVideoRoom][startScreenShare] ::: Got a local stream :::", stream);
+						Janus.log("[SipVideoRoom][startScreenShare][onlocalstream] ::: Got a local stream :::", stream);
 
 						$('#room').removeClass('hide').show();
 
@@ -1001,9 +982,10 @@ function startScreenShare(account) {
 					},
 					onremotestream: function(stream) {
 						// The publisher stream is sendonly, we don't expect anything here
+						Janus.log("[SipVideoRoom][startScreenShare][onremotestream] The publisher stream is sendonly, we don't expect anything here");
 					},
 					oncleanup: function() {
-						Janus.log("[SipVideoRoom][startScreenShare] ::: Got a cleanup notification :::");
+						Janus.log("[SipVideoRoom][startScreenShare][oncleanup] ::: Got a cleanup notification :::");
 						$('#screencapture').empty();
 						$("#screencapture").parent().unblock();
 						$('#room').hide();
@@ -1011,7 +993,7 @@ function startScreenShare(account) {
 				});
 			},
 			error: function(error) {
-				Janus.error("[SipVideoRoom][startScreenShare] " + error);
+				Janus.error("[SipVideoRoom][startScreenShare][error] " + error);
 			},
 			destroyed: function() {
 				window.location.reload();
@@ -1022,7 +1004,7 @@ function startScreenShare(account) {
 
 function joinScreenShare(account) {
 
-	Janus.log("[SipVideoRoom][shareScreen] Screen sharing using room: " + screenshare_room);
+	Janus.log("[SipVideoRoom][shareScreen][joinScreenShare] Screen sharing using room: " + screenshare_room);
 
 	let join = {
 		request: "join",
@@ -1035,21 +1017,9 @@ function joinScreenShare(account) {
 	});
 }
 
-function preShareOwnScreen() {
-	roleScreenShare = "publisher";
-
-	let leave = {
-		reqeuest: "leave"
-	};
-
-	screentest.send({
-		message: leave
-	});
-}
-
 
 function shareOwnScreen(account) {
-	Janus.debug("[SipVideoRoom][startScreenShare] Negotiating WebRTC stream for our screen");
+	Janus.log("[SipVideoRoom][shareOwnScreen] Negotiating WebRTC stream for our screen");
 
 	$('#screensharesession').html(account);
 
@@ -1060,9 +1030,12 @@ function shareOwnScreen(account) {
 			videoRecv: false
 		},	// Screen sharing Publishers are sendonly
 		success: function(jsep) {
-			Janus.debug("[SipVideoRoom][startScreenShare] Got publisher SDP!", jsep);
+			Janus.log("[SipVideoRoom][shareOwnScreen][success] Got publisher SDP!");
+
+			screenShareRole = 'publisher';
+
 			let publish = { 
-				request: "configure", 
+				request: "publish",
 				audio: false, 
 				video: true 
 			};
@@ -1072,13 +1045,29 @@ function shareOwnScreen(account) {
 			});
 		},
 		error: function(error) {
-			Janus.error("[SipVideoRoom][startScreenShare] WebRTC error:", error);
+			Janus.error("[SipVideoRoom][shareOwnScreen][error] WebRTC error:", error);
 		}
 	});
 }	
 
 function newRemoteScreen(id, display) {
 	// A new feed has been published, create a new plugin handle and attach to it as a listener
+
+	Janus.log("[SipVideoRoom][newRemoteScreen] Started!");
+
+	// First - unpublish own stream if any
+	if (screenShareRole === 'publisher') {
+		Janus.log("[SipVideoRoom][newRemoteScreen] Unpublish own stream!");
+		screenShareRole = 'listener';
+		screentest.send({ 
+			message: {
+				reqeuest: "unpublish"
+			}
+		});
+	} else {
+		Janus.log("[SipVideoRoom][newRemoteScreen] No need to unpublish, we are listeners");
+	}
+
 	source = id;
 	let remoteScreenShare = null;
 	janus_wss.attach({
@@ -1086,8 +1075,8 @@ function newRemoteScreen(id, display) {
 		opaqueId: screenShareOpaqueId,
 		success: function(pluginHandle) {
 			remoteScreenShare = pluginHandle;
-			Janus.log("[SipVideoRoom][startScreenShare] Plugin attached! (" + remoteScreenShare.getPlugin() + ", id=" + remoteScreenShare.getId() + ")");
-			Janus.log("[SipVideoRoom][startScreenShare]   -- This is a subscriber");
+			Janus.log("[SipVideoRoom][newRemoteScreen][success] Plugin attached! (" + remoteScreenShare.getPlugin() + ", id=" + remoteScreenShare.getId() + ")");
+			Janus.log("[SipVideoRoom][newRemoteScreen][success]   -- This is a subscriber");
 			// We wait for the plugin to send us an offer
 			let listen = {
 				request: "join",
@@ -1098,12 +1087,12 @@ function newRemoteScreen(id, display) {
 			remoteScreenShare.send({ message: listen });
 		},
 		error: function(error) {
-			Janus.error("[SipVideoRoom][startScreenShare]   -- Error attaching plugin...", error);
+			Janus.error("[SipVideoRoom][newRemoteScreen][error]   -- Error attaching plugin...", error);
 		},
 		onmessage: function(msg, jsep) {
-			Janus.debug("[SipVideoRoom][startScreenShare]  ::: Got a message (listener) :::", msg);
+			Janus.log("[SipVideoRoom][newRemoteScreen][onmessage]  ::: Got a message (listener) :::", msg);
 			let event = msg["videoroom"];
-			Janus.debug("[SipVideoRoom][startScreenShare] Event: " + event);
+			Janus.log("[SipVideoRoom][newRemoteScreen][onmessage] Event: " + event);
 			if(event) {
 				if(event === "attached") {
 					// Subscriber created and attached
@@ -1115,13 +1104,13 @@ function newRemoteScreen(id, display) {
 					} else {
 						spinner.spin();
 					}
-					Janus.log("[SipVideoRoom][startScreenShare] Successfully attached to feed " + id + " (" + display + ") in room " + msg["room"]);
+					Janus.log("[SipVideoRoom][newRemoteScreen][onmessage] Successfully attached to feed " + id + " (" + display + ") in room " + msg["room"]);
 				} else {
 					// What has just happened?
 				}
 			}
 			if(jsep) {
-				Janus.debug("[SipVideoRoom][startScreenShare] Handling SDP as well...", jsep);
+				Janus.log("[SipVideoRoom][newRemoteScreen][onmessage] Handling SDP as well...", jsep);
 				// Answer and attach
 				remoteScreenShare.createAnswer({
 					jsep: jsep,
@@ -1130,7 +1119,7 @@ function newRemoteScreen(id, display) {
 						videoSend: false 
 					},	// We want recvonly audio/video
 					success: function(jsep) {
-						Janus.debug("[SipVideoRoom][startScreenShare] Got SDP!", jsep);
+						Janus.log("[SipVideoRoom][newRemoteScreen][onmessage][createAnswer][success] Got SDP!", jsep);
 						let start = { 
 							request: "start", 
 							room: screenshare_room 
@@ -1141,15 +1130,17 @@ function newRemoteScreen(id, display) {
 						});
 					},
 					error: function(error) {
-						Janus.error("[SipVideoRoom][startScreenShare] WebRTC error:", error);
+						Janus.error("[SipVideoRoom][newRemoteScreen][onmessage][createAnswer][error] WebRTC error:", error);
 					}
 				});
 			}
 		},
 		onlocalstream: function(stream) {
+			Janus.log("[SipVideoRoom][newRemoteScreen][onlocalstream] The subscriber stream is recvonly, we don't expect anything here");
 			// The subscriber stream is recvonly, we don't expect anything here
 		},
 		onremotestream: function(stream) {
+			Janus.log("[SipVideoRoom][newRemoteScreen][onremotestream] Start receiving remote stream");
 			if($('#screenvideo').length === 0) {
 				// No remote video yet
 				$('#screencapture').append('<video class="rounded centered" id="waitingvideo" width="100%" height="100%" />');
@@ -1167,7 +1158,7 @@ function newRemoteScreen(id, display) {
 			Janus.attachMediaStream($('#screenvideo').get(0), stream);
 		},
 		oncleanup: function() {
-			Janus.log("The screen sharing session is over, the publisher left ::: Got a cleanup notification (remote feed " + id + ") :::");
+			Janus.log("[SipVideoRoom][newRemoteScreen][oncleanup] The screen sharing session is over, the publisher left ::: Got a cleanup notification (remote feed " + id + ") :::");
 			$('#waitingvideo').remove();
 			if(spinner) {
 				spinner.stop();
