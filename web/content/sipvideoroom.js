@@ -946,9 +946,16 @@ function startScreenShare(account) {
 									}
 								} else if (msg["left"]) {
 									Janus.log("[SipVideoRoom][startScreenShare][onmessage] Got LEFT event");
-								} else if(msg["error"]) {
+								} else if (msg["error"]) {
 									Janus.error("[SipVideoRoom][startScreenShare][onmessage] Error: " + msg['error']);
+								} else if (msg["unpublished"]) {
+									Janus.log("[SipVideoRoom][startScreenShare][onmessage] Unpublish");
+									if (screenShareRole === "rePublisher") {
+										Janus.log("[SipVideoRoom][startScreenShare][onmessage] rePublish again!");
+										shareOwnScreen(account);
+									}
 								}
+
 							}
 						}
 						if(jsep) {
@@ -1021,7 +1028,18 @@ function joinScreenShare(account) {
 function shareOwnScreen(account) {
 	Janus.log("[SipVideoRoom][shareOwnScreen] Negotiating WebRTC stream for our screen");
 
-	$('#screensharesession').html(account);
+	if (screenShareRole === 'publisher') {
+		Janus.log("[SipVideoRoom][shareOwnScreen][publisher] Sending unpublish first!");
+		screenShareRole = 'rePublisher';
+		screentest.send({ 
+			message: {
+				request: "unpublish"
+			}
+		});
+		return;
+	}
+
+	$('#screensharesession').removeClass('label-info').addClass('label-success').html(account);
 
 	screentest.createOffer({
 		media: { 
@@ -1057,13 +1075,14 @@ function newRemoteScreen(id, display) {
 
 	// First - unpublish own stream if any
 	if (screenShareRole === 'publisher') {
-		Janus.log("[SipVideoRoom][newRemoteScreen] Unpublish own stream!");
+		Janus.log("[SipVideoRoom][newRemoteScreen][publisher] Sending unpublish!");
 		screenShareRole = 'listener';
 		screentest.send({ 
 			message: {
-				reqeuest: "unpublish"
+				request: "unpublish"
 			}
 		});
+		//screentest.hangup();
 	} else {
 		Janus.log("[SipVideoRoom][newRemoteScreen] No need to unpublish, we are listeners");
 	}
@@ -1084,7 +1103,9 @@ function newRemoteScreen(id, display) {
 				ptype: "listener",
 				feed: id
 			};
-			remoteScreenShare.send({ message: listen });
+			remoteScreenShare.send({ 
+				message: listen 
+			});
 		},
 		error: function(error) {
 			Janus.error("[SipVideoRoom][newRemoteScreen][error]   -- Error attaching plugin...", error);
@@ -1141,6 +1162,9 @@ function newRemoteScreen(id, display) {
 		},
 		onremotestream: function(stream) {
 			Janus.log("[SipVideoRoom][newRemoteScreen][onremotestream] Start receiving remote stream");
+
+			$('#screensharesession').removeClass('label-success').addClass('label-info').html(display);
+
 			if($('#screenvideo').length === 0) {
 				// No remote video yet
 				$('#screencapture').append('<video class="rounded centered" id="waitingvideo" width="100%" height="100%" />');
