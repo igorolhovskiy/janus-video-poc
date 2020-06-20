@@ -331,8 +331,7 @@ function doSipAudioCall(destination) {
 
 	Janus.log("[SipVideoRoom] This is a SIP audio call to " + destination);
 
-	sipcall.createOffer(
-		{
+	sipcall.createOffer({
 			media: {
 				audioSend: true, 
 				audioRecv: true,		// We DO want audio
@@ -387,8 +386,7 @@ function startVideo(account) {
 	$('#videos').removeClass('hide').show();
 
 	// Attach to VideoRoom plugin	
-	janus.attach(
-		{
+	janus.attach({
 			plugin: "janus.plugin.videoroom",
 			opaqueId: videoroomOpaqueId,
 			success: function(pluginHandle) {
@@ -735,8 +733,7 @@ function newRemoteFeed(id, display, audio, video) {
 				if(jsep) {
 					Janus.log("[SipVideoRoom][newRemoteFeed] Handling SDP as well...", jsep);
 					// Answer and attach
-					remoteFeed.createAnswer(
-						{
+					remoteFeed.createAnswer({
 							jsep: jsep,
 							// Add data:true here if you want to subscribe to datachannels as well
 							// (obviously only works if the publisher offered them in the first place)
