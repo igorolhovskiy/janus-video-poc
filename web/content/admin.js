@@ -9,21 +9,23 @@ if(window.location.protocol === 'http:')
 	server = "http://" + window.location.hostname + ":7088/admin";
 else
 	server = "https://" + window.location.hostname + ":7889/admin";
+
 // If you don't want the page to prompt you for a password, insert it here
-var secret = "";
+var secret = "janusoverlord";
 
 var session = null;		// Selected session
 var handle = null;		// Selected handle
 
-var plugins = [], pluginsIndex = [];
+var plugins = [], pluginsIndex = [], pluginRows = 0;
+var transports = [], transportsIndex = [], transportRows = 0;
 var settings = {};
 
 var currentHandle = null;
 var localSdp = null, remoteSdp = null;
 
+var handleInfo;
+
 $(document).ready(function() {
-	if(typeof console == "undefined" || typeof console.log == "undefined")
-		console = { log: function() {} };
 	$('#admintabs a').click(function (e) {
 		e.preventDefault()
 		$(this).tab('show')
@@ -45,15 +47,15 @@ function promptAccessDetails() {
 	if(prompting)
 		return;
 	prompting = true;
-	var serverPlaceholder = "Insert the address of the Admin API backend";
-	var secretPlaceholder = "Insert the Admin API secret";
+	let serverPlaceholder = "Insert the address of the Admin API backend";
+	let secretPlaceholder = "Insert the Admin API secret";
 	bootbox.alert({
-		message: "<div class='input-group margin-bottom-sm'>" +
-			"	<span class='input-group-addon'><i class='fa fa-cloud-upload fa-fw'></i></span>" +
+		message: "<div class='input-group mt-3 mb-1'>" +
+			"	<span class='input-group-text'><i class='fa-solid fa-cloud-arrow-up'></i></span>" +
 			"	<input class='form-control' type='text' value='" + server + "' placeholder='" + serverPlaceholder + "' autocomplete='off' id='server'></input>" +
 			"</div>" +
-			"<div class='input-group margin-bottom-sm'>" +
-			"	<span class='input-group-addon'><i class='fa fa-key fa-fw'></i></span>" +
+			"<div class='input-group mt-3 mb-1'>" +
+			"	<span class='input-group-text'><i class='fa-solid fa-key'></i></span>" +
 			"	<input class='form-control' type='password'  value='" + secret + "'placeholder='" + secretPlaceholder + "' autocomplete='off' id='secret'></input>" +
 			"</div>",
 		closeButton: false,
@@ -68,10 +70,10 @@ function promptAccessDetails() {
 
 // Helper method to create random identifiers (e.g., transaction)
 function randomString(len) {
-	charSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-	var randomString = '';
-	for (var i = 0; i < len; i++) {
-		var randomPoz = Math.floor(Math.random() * charSet.length);
+	const charSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+	let randomString = '';
+	for (let i = 0; i < len; i++) {
+		let randomPoz = Math.floor(Math.random() * charSet.length);
 		randomString += charSet.substring(randomPoz,randomPoz+1);
 	}
 	return randomString;
@@ -81,6 +83,8 @@ function randomString(len) {
 function updateServerInfo() {
 	plugins = [];
 	pluginsIndex = [];
+	transports = [];
+	transportsIndex = [];
 	$.ajax({
 		type: 'GET',
 		url: server + "/info",
@@ -100,16 +104,18 @@ function updateServerInfo() {
 			}
 			console.log("Got server info:");
 			console.log(json);
-			var pluginsJson = json.plugins;
-			var transportsJson = json.transports;
-			var eventsJson = json.events;
+			let pluginsJson = json.plugins;
+			let transportsJson = json.transports;
+			let eventsJson = json.events;
+			let loggersJson = json.loggers;
 			delete json.janus;
 			delete json.transaction;
 			delete json.plugins;
 			delete json.transports;
 			delete json.events;
+			delete json.loggers;
 			$('#server-details').empty();
-			for(var k in json) {
+			for(let k in json) {
 				if(k === "dependencies") {
 					$('#server-deps').html(
 						'<tr>' +
@@ -117,7 +123,7 @@ function updateServerInfo() {
 						'	<th>Version</th>' +
 						'</tr>'
 					);
-					for(var ln in json[k]) {
+					for(let ln in json[k]) {
 						$('#server-deps').append(
 							'<tr>' +
 							'	<td>' + ln + '</td>' +
@@ -127,7 +133,7 @@ function updateServerInfo() {
 					}
 					continue;
 				}
-				var v = json[k];
+				let v = json[k];
 				$('#server-details').append(
 					'<tr>' +
 					'	<td><b>' + k + ':</b></td>' +
@@ -143,9 +149,9 @@ function updateServerInfo() {
 				'</tr>'
 			);
 			$('#plugins-list').empty();
-			for(var p in pluginsJson) {
+			for(let p in pluginsJson) {
 				plugins.push(p);
-				var v = pluginsJson[p];
+				let v = pluginsJson[p];
 				$('#server-plugins').append(
 					'<tr>' +
 					'	<td>' + v.name + '</td>' +
@@ -155,12 +161,14 @@ function updateServerInfo() {
 					'</tr>');
 				pluginsIndex.push(p);
 				$('#plugins-list').append(
-					'<a id="plugin-'+(pluginsIndex.length-1)+'" href="#" class="list-group-item">'+p+'</a>'
+					'<a id="plugin-' + (pluginsIndex.length-1) + '" href="#" class="list-group-item list-group-item-action">' +
+						'<small>' + p + '</small>' +
+					'</a>'
 				);
 				$('#plugin-'+(pluginsIndex.length-1)).click(function(event) {
 					event.preventDefault();
-					var pi = parseInt($(this).attr('id').split('plugin-')[1]);
-					var plugin = pluginsIndex[pi];
+					let pi = parseInt($(this).attr('id').split('plugin-')[1]);
+					let plugin = pluginsIndex[pi];
 					console.log("Selected plugin:", plugin);
 					$('#plugins-list a').removeClass('active');
 					$('#plugin-'+pi).addClass('active');
@@ -175,8 +183,9 @@ function updateServerInfo() {
 				'	<th>Version</th>' +
 				'</tr>'
 			);
-			for(var t in transportsJson) {
-				var v = transportsJson[t];
+			for(let t in transportsJson) {
+				transports.push(t);
+				let v = transportsJson[t];
 				$('#server-transports').append(
 					'<tr>' +
 					'	<td>' + v.name + '</td>' +
@@ -184,6 +193,21 @@ function updateServerInfo() {
 					'	<td>' + v.description + '</td>' +
 					'	<td>' + v.version_string + '</td>' +
 					'</tr>');
+				transportsIndex.push(t);
+				$('#transports-list').append(
+					'<a id="transport-' + (transportsIndex.length-1) + '" href="#" class="list-group-item list-group-item-action">' +
+						'<small>' + t + '</small>' +
+					'</a>'
+				);
+				$('#transport-'+(transportsIndex.length-1)).click(function(event) {
+					event.preventDefault();
+					let ti = parseInt($(this).attr('id').split('transport-')[1]);
+					let transport = transportsIndex[ti];
+					console.log("Selected transport:", transport);
+					$('#transports-list a').removeClass('active');
+					$('#transport-'+ti).addClass('active');
+					resetTransportRequest();
+				});
 			}
 			$('#server-handlers').html(
 				'<tr>' +
@@ -193,8 +217,8 @@ function updateServerInfo() {
 				'	<th>Version</th>' +
 				'</tr>'
 			);
-			for(var e in eventsJson) {
-				var v = eventsJson[e];
+			for(let e in eventsJson) {
+				let v = eventsJson[e];
 				$('#server-handlers').append(
 					'<tr>' +
 					'	<td>' + v.name + '</td>' +
@@ -203,13 +227,31 @@ function updateServerInfo() {
 					'	<td>' + v.version_string + '</td>' +
 					'</tr>');
 			}
+			$('#server-loggers').html(
+				'<tr>' +
+				'	<th>Name</th>' +
+				'	<th>Author</th>' +
+				'	<th>Description</th>' +
+				'	<th>Version</th>' +
+				'</tr>'
+			);
+			for(let e in loggersJson) {
+				let v = loggersJson[e];
+				$('#server-loggers').append(
+					'<tr>' +
+					'	<td>' + v.name + '</td>' +
+					'	<td>' + v.author + '</td>' +
+					'	<td>' + v.description + '</td>' +
+					'	<td>' + v.version_string + '</td>' +
+					'</tr>');
+			}
 			// Unlock tabs
-			$('#admintabs li').removeClass('disabled');
+			$('#admintabs li a').removeClass('disabled');
 			// Refresh settings now
 			updateSettings();
 			// Refresh sessions and handles now
-			$('#handles').hide();
-			$('#info').hide();
+			$('#handles').addClass('hide');
+			$('#info').addClass('hide');
 			$('#update-sessions').click(updateSessions);
 			$('#update-handles').click(updateHandles);
 			$('#update-handle').click(updateHandleInfo);
@@ -239,12 +281,13 @@ function updateServerInfo() {
 			});
 			// Only check tokens if the mechanism is enabled
 			if(!json["auth_token"]) {
-				$('a[href=#tokens]').parent().addClass('disabled');
-				$('a[href=#tokens]').attr('href', '#').unbind('click').click(function (e) { e.preventDefault(); return false; });
+				$("a[href='#tokens']").addClass('disabled');
+				$("a[href='#tokens']").attr('href', '#').unbind('click').click(function (e) { e.preventDefault(); return false; });
 			} else {
 				updateTokens();
 			}
 		},
+		// eslint-disable-next-line no-unused-vars
 		error: function(XMLHttpRequest, textStatus, errorThrown) {
 			console.log(textStatus + ": " + errorThrown);	// FIXME
 			if(!prompting && !alerted) {
@@ -262,7 +305,7 @@ function updateServerInfo() {
 // Settings
 function updateSettings() {
 	$('#update-settings').unbind('click').addClass('fa-spin');
-	var request = { "janus": "get_status", "transaction": randomString(12), "admin_secret": secret };
+	let request = { "janus": "get_status", "transaction": randomString(12), "admin_secret": secret };
 	$.ajax({
 		type: 'POST',
 		url: server,
@@ -272,7 +315,7 @@ function updateSettings() {
 		success: function(json) {
 			if(json["janus"] !== "success") {
 				console.log("Ooops: " + json["error"].code + " " + json["error"].reason);	// FIXME
-				var authenticate = (json["error"].code === 403);
+				let authenticate = (json["error"].code === 403);
 				if(!authenticate || (authenticate && !prompting && !alerted)) {
 					if(authenticate)
 						alerted = true;
@@ -294,7 +337,7 @@ function updateSettings() {
 				$('#update-settings').removeClass('fa-spin').click(updateSettings);
 			}, 1000);
 			$('#server-settings').empty();
-			for(var k in json.status) {
+			for(let k in json.status) {
 				settings[k] = json.status[k];
 				$('#server-settings').append(
 					'<tr>' +
@@ -393,9 +436,9 @@ function updateSettings() {
 						.addClass(!settings[k] ? "btn-success" : "btn-danger")
 						.html(!settings[k] ? "Enable locking debug" : "Disable locking debug");
 					$('#'+k + "_button").click(function() {
-						var text = (!settings["locking_debug"] ?
+						let text = (!settings["locking_debug"] ?
 							"Are you sure you want to enable the locking debug?<br/>This will print a line on the console any time a mutex is locked/unlocked"
-								: "Are you sure you want to disable the locking debug?");
+							: "Are you sure you want to disable the locking debug?");
 						bootbox.confirm(text, function(result) {
 							if(result)
 								setLockingDebug(!settings["locking_debug"]);
@@ -407,9 +450,9 @@ function updateSettings() {
 						.addClass(!settings[k] ? "btn-success" : "btn-danger")
 						.html(!settings[k] ? "Enable reference counters debug" : "Disable reference counters debug");
 					$('#'+k + "_button").click(function() {
-						var text = (!settings["refcount_debug"] ?
+						let text = (!settings["refcount_debug"] ?
 							"Are you sure you want to enable the reference counters debug?<br/>This will print a line on the console any time a reference counter is increased/decreased"
-								: "Are you sure you want to disable the reference counters debug?");
+							: "Are you sure you want to disable the reference counters debug?");
 						bootbox.confirm(text, function(result) {
 							if(result)
 								setRefcountDebug(!settings["refcount_debug"]);
@@ -421,9 +464,9 @@ function updateSettings() {
 						.addClass(!settings[k] ? "btn-success" : "btn-danger")
 						.html(!settings[k] ? "Enable log timestamps" : "Disable log timestamps");
 					$('#'+k + "_button").click(function() {
-						var text = (!settings["log_timestamps"] ?
+						let text = (!settings["log_timestamps"] ?
 							"Are you sure you want to enable the log timestamps?<br/>This will print the current date/time for each new line on the console"
-								: "Are you sure you want to disable the log timestamps?");
+							: "Are you sure you want to disable the log timestamps?");
 						bootbox.confirm(text, function(result) {
 							if(result)
 								setLogTimestamps(!settings["log_timestamps"]);
@@ -435,9 +478,9 @@ function updateSettings() {
 						.addClass(!settings[k] ? "btn-success" : "btn-danger")
 						.html(!settings[k] ? "Enable log colors" : "Disable log colors");
 					$('#'+k + "_button").click(function() {
-						var text = (!settings["log_colors"] ?
+						let text = (!settings["log_colors"] ?
 							"Are you sure you want to enable the log colors?<br/>This will strip the colors from events like warnings, errors, etc. on the console"
-								: "Are you sure you want to disable the log colors?");
+							: "Are you sure you want to disable the log colors?");
 						bootbox.confirm(text, function(result) {
 							if(result)
 								setLogColors(!settings["log_colors"]);
@@ -449,9 +492,9 @@ function updateSettings() {
 						.addClass(!settings[k] ? "btn-success" : "btn-danger")
 						.html(!settings[k] ? "Enable libnice debug" : "Disable libnice debug");
 					$('#'+k + "_button").click(function() {
-						var text = (!settings["libnice_debug"] ?
+						let text = (!settings["libnice_debug"] ?
 							"Are you sure you want to enable the libnice debug?<br/>This will print the a very verbose debug of every libnice-related operation on the console"
-								: "Are you sure you want to disable the libnice debug?");
+							: "Are you sure you want to disable the libnice debug?");
 						bootbox.confirm(text, function(result) {
 							if(result)
 								setLibniceDebug(!settings["libnice_debug"]);
@@ -460,6 +503,7 @@ function updateSettings() {
 				}
 			}
 		},
+		// eslint-disable-next-line no-unused-vars
 		error: function(XMLHttpRequest, textStatus, errorThrown) {
 			console.log(textStatus + ": " + errorThrown);	// FIXME
 			$('#update-settings').removeClass('fa-spin').click(updateSettings);
@@ -476,52 +520,52 @@ function updateSettings() {
 }
 
 function setSessionTimeoutValue(timeout) {
-	var request = { "janus": "set_session_timeout", "timeout": timeout, "transaction": randomString(12), "admin_secret": secret };
+	let request = { "janus": "set_session_timeout", "timeout": timeout, "transaction": randomString(12), "admin_secret": secret };
 	sendSettingsRequest(request);
 }
 
 function setLogLevel(level) {
-	var request = { "janus": "set_log_level", "level": level, "transaction": randomString(12), "admin_secret": secret };
+	let request = { "janus": "set_log_level", "level": level, "transaction": randomString(12), "admin_secret": secret };
 	sendSettingsRequest(request);
 }
 
 function setLockingDebug(enable) {
-	var request = { "janus": "set_locking_debug", "debug": enable, "transaction": randomString(12), "admin_secret": secret };
+	let request = { "janus": "set_locking_debug", "debug": enable, "transaction": randomString(12), "admin_secret": secret };
 	sendSettingsRequest(request);
 }
 
 function setRefcountDebug(enable) {
-	var request = { "janus": "set_refcount_debug", "debug": enable, "transaction": randomString(12), "admin_secret": secret };
+	let request = { "janus": "set_refcount_debug", "debug": enable, "transaction": randomString(12), "admin_secret": secret };
 	sendSettingsRequest(request);
 }
 
 function setLogTimestamps(enable) {
-	var request = { "janus": "set_log_timestamps", "timestamps": enable, "transaction": randomString(12), "admin_secret": secret };
+	let request = { "janus": "set_log_timestamps", "timestamps": enable, "transaction": randomString(12), "admin_secret": secret };
 	sendSettingsRequest(request);
 }
 
 function setLogColors(enable) {
-	var request = { "janus": "set_log_colors", "colors": enable, "transaction": randomString(12), "admin_secret": secret };
+	let request = { "janus": "set_log_colors", "colors": enable, "transaction": randomString(12), "admin_secret": secret };
 	sendSettingsRequest(request);
 }
 
 function setLibniceDebug(enable) {
-	var request = { "janus": "set_libnice_debug", "debug": enable, "transaction": randomString(12), "admin_secret": secret };
+	let request = { "janus": "set_libnice_debug", "debug": enable, "transaction": randomString(12), "admin_secret": secret };
 	sendSettingsRequest(request);
 }
 
 function setMinNackQueue(queue) {
-	var request = { "janus": "set_min_nack_queue", "min_nack_queue": queue, "transaction": randomString(12), "admin_secret": secret };
+	let request = { "janus": "set_min_nack_queue", "min_nack_queue": queue, "transaction": randomString(12), "admin_secret": secret };
 	sendSettingsRequest(request);
 }
 
 function setNoMediaTimer(timer) {
-	var request = { "janus": "set_no_media_timer", "no_media_timer": timer, "transaction": randomString(12), "admin_secret": secret };
+	let request = { "janus": "set_no_media_timer", "no_media_timer": timer, "transaction": randomString(12), "admin_secret": secret };
 	sendSettingsRequest(request);
 }
 
 function setSlowlinkThreshold(packets) {
-	var request = { "janus": "set_slowlink_threshold", "slowlink_threshold": packets, "transaction": randomString(12), "admin_secret": secret };
+	let request = { "janus": "set_slowlink_threshold", "slowlink_threshold": packets, "transaction": randomString(12), "admin_secret": secret };
 	sendSettingsRequest(request);
 }
 
@@ -536,7 +580,7 @@ function sendSettingsRequest(request) {
 		success: function(json) {
 			if(json["janus"] !== "success") {
 				console.log("Ooops: " + json["error"].code + " " + json["error"].reason);	// FIXME
-				var authenticate = (json["error"].code === 403);
+				let authenticate = (json["error"].code === 403);
 				if(!authenticate || (authenticate && !prompting && !alerted)) {
 					if(authenticate)
 						alerted = true;
@@ -551,6 +595,7 @@ function sendSettingsRequest(request) {
 			}
 			updateSettings();
 		},
+		// eslint-disable-next-line no-unused-vars
 		error: function(XMLHttpRequest, textStatus, errorThrown) {
 			console.log(textStatus + ": " + errorThrown);	// FIXME
 			if(!prompting && !alerted) {
@@ -567,6 +612,7 @@ function sendSettingsRequest(request) {
 
 // Plugins
 function resetPluginRequest() {
+	pluginRows = 0;
 	$('#plugin-request').empty().append(
 		'<tr style="background: #f9f9f9;">' +
 		'	<th width="25%">Name</th>' +
@@ -575,35 +621,38 @@ function resetPluginRequest() {
 		'	<th></th>' +
 		'</tr>' +
 		'<tr>' +
-		'	<td><i id="addattr" class="fa fa-plus-circle" style="cursor: pointer;"></i></td>' +
+		'	<td><i id="addattr" class="fa-solid fa-plus-circle" style="cursor: pointer;"></i></td>' +
 		'	<td></td>' +
 		'	<td></td>' +
 		'	<td><button id="sendmsg" type="button" class="btn btn-xs btn-success pull-right">Send message</button></td>' +
 		'</tr>');
 	$('#addattr').click(addPluginMessageAttribute).click();
 	$('#sendmsg').click(function() {
-		var message = {};
-		var num = $('.pm-property').length;
-		for(var i=0; i<num; i++) {
-			var name = $('#attrname'+i).val();
+		let message = {};
+		let index = 0;
+		for(let i=0; i<=pluginRows; i++) {
+			if($('#attrname'+i).length === 0)
+				continue;
+			index++;
+			let name = $('#attrname'+i).val();
 			if(name === '') {
-				bootbox.alert("Missing name in attribute #" + (i+1));
+				bootbox.alert("Missing name in attribute #" + index);
 				return;
 			}
 			if(message[name] !== null && message[name] !== undefined) {
 				bootbox.alert("Duplicate attribute '" + name + "'");
 				return;
 			}
-			var value = $('#attrvalue'+i).val();
+			let value = $('#attrvalue'+i).val();
 			if(value === '') {
-				bootbox.alert("Missing value in attribute #" + (i+1));
+				bootbox.alert("Missing value in attribute #" + index);
 				return;
 			}
-			var type = $('#attrtype'+i).val();
+			let type = $('#attrtype'+i).val();
 			if(type === "number") {
 				value = parseInt(value);
 				if(isNaN(value)) {
-					bootbox.alert("Invalid value in attribute #" + (i+1) + " (expecting a number)");
+					bootbox.alert("Invalid value in attribute #" + index + " (expecting a number)");
 					return;
 				}
 			} else if(type === "boolean") {
@@ -612,7 +661,7 @@ function resetPluginRequest() {
 				} else if(value.toLowerCase() === "false") {
 					value = false;
 				} else {
-					bootbox.alert("Invalid value in attribute #" + (i+1) + " (expecting a boolean)");
+					bootbox.alert("Invalid value in attribute #" + index + " (expecting a boolean)");
 					return;
 				}
 			}
@@ -625,7 +674,8 @@ function resetPluginRequest() {
 }
 
 function addPluginMessageAttribute() {
-	var num = $('.pm-property').length;
+	let num = pluginRows;
+	pluginRows++;
 	$('#addattr').parent().parent().before(
 		'<tr>' +
 		'	<td><input type="text" id="attrname' + num + '" placeholder="Attribute name" onkeypress="return checkEnter(this, event);" style="width: 100%;" class="pm-property form-control input-sm"></td>' +
@@ -637,14 +687,17 @@ function addPluginMessageAttribute() {
 		'			<option>boolean</option>' +
 		'		</select>' +
 		'	</td>' +
-		'	<td></td>' +
+		'	<td><i id="rmattr' + num + '" class="fa-solid fa-rectangle-xmark" style="cursor: pointer;"></i></td>' +
 		'</tr>'
 	);
+	$('#rmattr' + num).click(function() {
+		$(this).parent().parent().remove();
+	});
 }
 
 function sendPluginMessage(plugin, message) {
 	console.log("Sending message to " + plugin + ":", message);
-	var request = {
+	let request = {
 		janus: "message_plugin",
 		transaction: randomString(12),
 		admin_secret: secret,
@@ -660,7 +713,7 @@ function sendPluginMessage(plugin, message) {
 		success: function(json) {
 			if(json["janus"] !== "success") {
 				console.log("Ooops: " + json["error"].code + " " + json["error"].reason);	// FIXME
-				var authenticate = (json["error"].code === 403);
+				let authenticate = (json["error"].code === 403);
 				if(!authenticate || (authenticate && !prompting && !alerted)) {
 					if(authenticate)
 						alerted = true;
@@ -674,6 +727,139 @@ function sendPluginMessage(plugin, message) {
 			}
 			$('#plugin-response').text(JSON.stringify(json, null, 4));
 		},
+		// eslint-disable-next-line no-unused-vars
+		error: function(XMLHttpRequest, textStatus, errorThrown) {
+			console.log(textStatus + ": " + errorThrown);	// FIXME
+			if(!prompting && !alerted) {
+				alerted = true;
+				bootbox.alert("Couldn't contact the backend: is Janus down, or is the Admin/Monitor interface disabled?", function() {
+					promptAccessDetails();
+					alerted = false;
+				});
+			}
+		},
+		dataType: "json"
+	});
+}
+
+// Transports
+function resetTransportRequest() {
+	transportRows = 0;
+	$('#transport-request').empty().append(
+		'<tr style="background: #f9f9f9;">' +
+		'	<th width="25%">Name</th>' +
+		'	<th width="25%">Value</th>' +
+		'	<th width="25%">Type</th>' +
+		'	<th></th>' +
+		'</tr>' +
+		'<tr>' +
+		'	<td><i id="traddattr" class="fa-solid fa-plus-circle" style="cursor: pointer;"></i></td>' +
+		'	<td></td>' +
+		'	<td></td>' +
+		'	<td><button id="trsendmsg" type="button" class="btn btn-xs btn-success pull-right">Send message</button></td>' +
+		'</tr>');
+	$('#traddattr').click(addTransportMessageAttribute).click();
+	$('#trsendmsg').click(function() {
+		let message = {};
+		let index = 0;
+		for(let i=0; i<=transportRows; i++) {
+			if($('#trattrname'+i).length === 0)
+				continue;
+			index++;
+			let name = $('#trattrname'+i).val();
+			if(name === '') {
+				bootbox.alert("Missing name in attribute #" + index);
+				return;
+			}
+			if(message[name] !== null && message[name] !== undefined) {
+				bootbox.alert("Duplicate attribute '" + name + "'");
+				return;
+			}
+			let value = $('#trattrvalue'+i).val();
+			if(value === '') {
+				bootbox.alert("Missing value in attribute #" + index);
+				return;
+			}
+			let type = $('#trattrtype'+i).val();
+			if(type === "number") {
+				value = parseInt(value);
+				if(isNaN(value)) {
+					bootbox.alert("Invalid value in attribute #" + index + " (expecting a number)");
+					return;
+				}
+			} else if(type === "boolean") {
+				if(value.toLowerCase() === "true") {
+					value = true;
+				} else if(value.toLowerCase() === "false") {
+					value = false;
+				} else {
+					bootbox.alert("Invalid value in attribute #" + index + " (expecting a boolean)");
+					return;
+				}
+			}
+			console.log("Type:", type);
+			message[name] = value;
+		}
+		sendTransportMessage($('#transports-list .active').text(), message);
+	});
+	$('#transport-message').removeClass('hide');
+}
+
+function addTransportMessageAttribute() {
+	let num = transportRows;
+	transportRows++;
+	$('#traddattr').parent().parent().before(
+		'<tr>' +
+		'	<td><input type="text" id="trattrname' + num + '" placeholder="Attribute name" onkeypress="return checkEnter(this, event);" style="width: 100%;" class="pm-property form-control input-sm"></td>' +
+		'	<td><input type="text" id="trattrvalue' + num + '" placeholder="Attribute value" onkeypress="return checkEnter(this, event);" style="width: 100%;" class="form-control input-sm"></td>' +
+		'	<td>' +
+		'		<select id="trattrtype' + num + '" class="form-control input-sm">' +
+		'			<option>string</option>' +
+		'			<option>number</option>' +
+		'			<option>boolean</option>' +
+		'		</select>' +
+		'	</td>' +
+		'	<td><i id="rmtrattr' + num + '" class="fa-solid fa-rectangle-xmark" style="cursor: pointer;"></i></td>' +
+		'</tr>'
+	);
+	$('#rmtrattr' + num).click(function() {
+		$(this).parent().parent().remove();
+	});
+}
+
+function sendTransportMessage(transport, message) {
+	console.log("Sending message to " + transport + ":", message);
+	let request = {
+		janus: "query_transport",
+		transaction: randomString(12),
+		admin_secret: secret,
+		transport: transport,
+		request: message
+	};
+	$.ajax({
+		type: 'POST',
+		url: server,
+		cache: false,
+		contentType: "application/json",
+		data: JSON.stringify(request),
+		success: function(json) {
+			if(json["janus"] !== "success") {
+				console.log("Ooops: " + json["error"].code + " " + json["error"].reason);	// FIXME
+				let authenticate = (json["error"].code === 403);
+				if(!authenticate || (authenticate && !prompting && !alerted)) {
+					if(authenticate)
+						alerted = true;
+					bootbox.alert(json["error"].reason, function() {
+						if(authenticate) {
+							promptAccessDetails();
+							alerted = false;
+						}
+					});
+				}
+			}
+			$('#transport-response').text(JSON.stringify(json, null, 4));
+		},
+		// eslint-disable-next-line no-unused-vars
 		error: function(XMLHttpRequest, textStatus, errorThrown) {
 			console.log(textStatus + ": " + errorThrown);	// FIXME
 			if(!prompting && !alerted) {
@@ -694,7 +880,7 @@ function updateSessions() {
 	$('#update-sessions').unbind('click').addClass('fa-spin');
 	$('#update-handles').unbind('click');
 	$('#update-handle').unbind('click');
-	var request = { "janus": "list_sessions", "transaction": randomString(12), "admin_secret": secret };
+	let request = { "janus": "list_sessions", "transaction": randomString(12), "admin_secret": secret };
 	$.ajax({
 		type: 'POST',
 		url: server,
@@ -704,7 +890,7 @@ function updateSessions() {
 		success: function(json) {
 			if(json["janus"] !== "success") {
 				console.log("Ooops: " + json["error"].code + " " + json["error"].reason);	// FIXME
-				var authenticate = (json["error"].code === 403);
+				let authenticate = (json["error"].code === 403);
 				if(!authenticate || (authenticate && !prompting && !alerted)) {
 					if(authenticate)
 						alerted = true;
@@ -724,24 +910,26 @@ function updateSessions() {
 				handle = null;
 				currentHandle = null;
 				$('#handles-list').empty();
-				$('#handles').hide();
+				$('#handles').addClass('hide');
 				$('#handle-info').empty();
-				$('#options').hide();
-				$('#info').hide();
+				$('#options').addClass('hide');
+				$('#info').addClass('hide');
 				return;
 			}
 			console.log("Got sessions:");
 			console.log(json);
 			$('#sessions-list').empty();
-			var sessions = json["sessions"];
+			let sessions = json["sessions"];
 			$('#sessions-num').text(sessions.length);
-			for(var i=0; i<sessions.length; i++) {
-				var s = sessions[i];
+			for(let i=0; i<sessions.length; i++) {
+				let s = sessions[i];
 				$('#sessions-list').append(
-					'<a id="session-'+s+'" href="#" class="list-group-item">'+s+'</a>'
+					'<a id="session-' + s + '" href="#" class="list-group-item list-group-item-action">' +
+						'<small>' + s + '</small>' +
+					'</a>'
 				);
 				$('#session-'+s).click(function() {
-					var sh = $(this).text();
+					let sh = $(this).text();
 					console.log("Getting session " + sh + " handles");
 					session = sh;
 					$('#sessions-list a').removeClass('active');
@@ -749,10 +937,10 @@ function updateSessions() {
 					handle = null;
 					currentHandle = null;
 					$('#handles-list').empty();
-					$('#handles').show();
+					$('#handles').removeClass('hide');
 					$('#handle-info').empty();
-					$('#options').hide();
-					$('#info').hide();
+					$('#options').addClass('hide');
+					$('#info').addClass('hide');
 					updateHandles();
 				});
 			}
@@ -765,10 +953,10 @@ function updateSessions() {
 					handle = null;
 					currentHandle = null;
 					$('#handles-list').empty();
-					$('#handles').hide();
+					$('#handles').addClass('hide');
 					$('#handle-info').empty();
-					$('#options').hide();
-					$('#info').hide();
+					$('#options').addClass('hide');
+					$('#info').addClass('hide');
 				}
 			}
 			setTimeout(function() {
@@ -777,6 +965,7 @@ function updateSessions() {
 				$('#update-handle').click(updateHandleInfo);
 			}, 1000);
 		},
+		// eslint-disable-next-line no-unused-vars
 		error: function(XMLHttpRequest, textStatus, errorThrown) {
 			console.log(textStatus + ": " + errorThrown);	// FIXME
 			setTimeout(function() {
@@ -788,10 +977,10 @@ function updateSessions() {
 			handle = null;
 			currentHandle = null;
 			$('#handles-list').empty();
-			$('#handles').hide();
+			$('#handles').addClass('hide');
 			$('#handle-info').empty();
-			$('#options').hide();
-			$('#info').hide();
+			$('#options').addClass('hide');
+			$('#info').addClass('hide');
 			if(!prompting && !alerted) {
 				alerted = true;
 				bootbox.alert("Couldn't contact the backend: is Janus down, or is the Admin/Monitor interface disabled?", function() {
@@ -810,7 +999,7 @@ function updateHandles() {
 	$('#update-sessions').unbind('click');
 	$('#update-handles').unbind('click').addClass('fa-spin');
 	$('#update-handle').unbind('click');
-	var request = { "janus": "list_handles", "transaction": randomString(12), "admin_secret": secret };
+	let request = { "janus": "list_handles", "transaction": randomString(12), "admin_secret": secret };
 	$.ajax({
 		type: 'POST',
 		url: server + "/" + session,
@@ -820,7 +1009,7 @@ function updateHandles() {
 		success: function(json) {
 			if(json["janus"] !== "success") {
 				console.log("Ooops: " + json["error"].code + " " + json["error"].reason);	// FIXME
-				var authenticate = (json["error"].code === 403);
+				let authenticate = (json["error"].code === 403);
 				if(!authenticate || (authenticate && !prompting && !alerted)) {
 					if(authenticate)
 						alerted = true;
@@ -841,15 +1030,17 @@ function updateHandles() {
 			console.log("Got handles:");
 			console.log(json);
 			$('#handles-list').empty();
-			var handles = json["handles"];
+			let handles = json["handles"];
 			$('#handles-num').text(handles.length);
-			for(var i=0; i<handles.length; i++) {
-				var h = handles[i];
+			for(let i=0; i<handles.length; i++) {
+				let h = handles[i];
 				$('#handles-list').append(
-					'<a id="handle-'+h+'" href="#" class="list-group-item">'+h+'</a>'
+					'<a id="handle-' + h + '" href="#" class="list-group-item list-group-item-action">' +
+						'<small>' + h + '</small>' +
+					'</a>'
 				);
 				$('#handle-'+h).click(function() {
-					var hi = $(this).text();
+					let hi = $(this).text();
 					console.log("Getting handle " + hi + " info");
 					handle = hi;
 					if(handle === currentHandle)
@@ -857,8 +1048,8 @@ function updateHandles() {
 					$('#handles-list a').removeClass('active');
 					$('#handle-'+hi).addClass('active');
 					$('#handle-info').empty();
-					$('#options').hide();
-					$('#info').show();
+					$('#options').addClass('hide');
+					$('#info').removeClass('hide');
 					updateHandleInfo();
 				});
 			}
@@ -870,8 +1061,8 @@ function updateHandles() {
 					handle = null;
 					currentHandle = null;
 					$('#handle-info').empty();
-					$('#options').hide();
-					$('#info').hide();
+					$('#options').addClass('hide');
+					$('#info').addClass('hide');
 				}
 			}
 			setTimeout(function() {
@@ -880,6 +1071,7 @@ function updateHandles() {
 				$('#update-handle').click(updateHandleInfo);
 			}, 1000);
 		},
+		// eslint-disable-next-line no-unused-vars
 		error: function(XMLHttpRequest, textStatus, errorThrown) {
 			console.log(textStatus + ": " + errorThrown);	// FIXME
 			$('#update-handles').removeClass('fa-spin').click(updateHandles);
@@ -905,13 +1097,13 @@ function updateHandleInfo(refresh) {
 			return;	// The self-refresh takes care of that
 		currentHandle = handle;
 	}
-	var updateHandle = currentHandle;
+	let updateHandle = currentHandle;
 	$('#update-sessions').unbind('click');
 	$('#update-handles').unbind('click');
 	$('#update-handle').unbind('click').addClass('fa-spin');
 	$('#capture').removeAttr('checked');
 	$('#capturetext').html('Start capture');
-	var request = { "janus": "handle_info", "transaction": randomString(12), "admin_secret": secret };
+	let request = { "janus": "handle_info", "transaction": randomString(12), "admin_secret": secret };
 	$.ajax({
 		type: 'POST',
 		url: server + "/" + session + "/" + handle,
@@ -922,7 +1114,7 @@ function updateHandleInfo(refresh) {
 			if(json["janus"] !== "success") {
 				console.log("Ooops: " + json["error"].code + " " + json["error"].reason);	// FIXME
 				if(refresh !== true) {
-					var authenticate = (json["error"].code === 403);
+					let authenticate = (json["error"].code === 403);
 					if(!authenticate || (authenticate && !prompting && !alerted)) {
 						if(authenticate)
 							alerted = true;
@@ -959,7 +1151,7 @@ function updateHandleInfo(refresh) {
 				$('#update-handle').removeClass('fa-spin').click(updateHandleInfo);
 			}, 1000);
 			// Show checkboxes
-			$('#options').removeClass('hide').show();
+			$('#options').removeClass('hide');
 			// If the related box is checked, autorefresh this handle info every tot seconds
 			if($('#autorefresh')[0].checked) {
 				setTimeout(function() {
@@ -975,6 +1167,7 @@ function updateHandleInfo(refresh) {
 				}, 5000);
 			}
 		},
+		// eslint-disable-next-line no-unused-vars
 		error: function(XMLHttpRequest, textStatus, errorThrown) {
 			console.log(textStatus + ": " + errorThrown);	// FIXME
 			$('#update-handles').removeClass('fa-spin').click(updateHandles);
@@ -994,22 +1187,22 @@ function updateHandleInfo(refresh) {
 
 function rawHandleInfo() {
 	// Just use <pre> and show the handle info as it is
-	$('#handle-info').html('<pre>' + JSON.stringify(handleInfo, null, 4) + '</pre>');
+	$('#handle-info').html('<pre class="card card-body bg-gray">' + JSON.stringify(handleInfo, null, 4) + '</pre>');
 }
 
 function prettyHandleInfo() {
 	// Prettify the handle info, processing it and turning it into tables
 	$('#handle-info').html('<table class="table table-striped" id="handle-info-table"></table>');
-	$('#options').hide();
-	for(var k in handleInfo) {
-		var v = handleInfo[k];
+	$('#options').addClass('hide');
+	for(let k in handleInfo) {
+		let v = handleInfo[k];
 		if(k === "plugin_specific") {
 			$('#handle-info').append(
 				'<h4>Plugin specific details</h4>' +
 				'<table class="table table-striped" id="plugin-specific">' +
 				'</table>');
-			for(var kk in v) {
-				var vv = v[kk];
+			for(let kk in v) {
+				let vv = v[kk];
 				$('#plugin-specific').append(
 					'<tr>' +
 					'	<td><b>' + kk + ':</b></td>' +
@@ -1021,8 +1214,8 @@ function prettyHandleInfo() {
 				'<h4>Flags</h4>' +
 				'<table class="table table-striped" id="flags">' +
 				'</table>');
-			for(var kk in v) {
-				var vv = v[kk];
+			for(let kk in v) {
+				let vv = v[kk];
 				$('#flags').append(
 					'<tr>' +
 					'	<td><b>' + kk + ':</b></td>' +
@@ -1036,8 +1229,8 @@ function prettyHandleInfo() {
 				'<h4>Session descriptions (SDP)</h4>' +
 				'<table class="table table-striped" id="sdps">' +
 				'</table>');
-			for(var kk in v) {
-				var vv = v[kk];
+			for(let kk in v) {
+				let vv = v[kk];
 				if(kk === "local") {
 					localSdp = vv;
 				} else if(kk === "remote") {
@@ -1053,7 +1246,7 @@ function prettyHandleInfo() {
 					'</tr>');
 				$('#' + kk).click(function(event) {
 					event.preventDefault();
-					var sdp = $(this).attr('id') === "local" ? localSdp : remoteSdp;
+					let sdp = $(this).attr('id') === "local" ? localSdp : remoteSdp;
 					bootbox.dialog({
 						title: "SDP (" + $(this).attr('id') + ")",
 						message: '<div style="max-height: ' + ($(window).height()*2/3) + 'px; overflow-y: auto;">' + sdp.split("\r\n").join("<br/>") + '</div>'
@@ -1064,15 +1257,15 @@ function prettyHandleInfo() {
 			$('#handle-info').append(
 				'<h4>ICE streams</h4>' +
 				'<div id="streams"></table>');
-			for(var kk in v) {
+			for(let kk in v) {
 				$('#streams').append(
 					'<h5>Stream #' + (parseInt(kk)+1) + '</h5>' +
 					'<table class="table table-striped" id="stream' + kk + '">' +
 					'</table>');
-				var vv = v[kk];
+				let vv = v[kk];
 				console.log(vv);
-				for(var sk in vv) {
-					var sv = vv[sk];
+				for(let sk in vv) {
+					let sv = vv[sk];
 					if(sk === "ssrc") {
 						$('#stream' + kk).append(
 							'<tr>' +
@@ -1082,8 +1275,8 @@ function prettyHandleInfo() {
 									'</table>' +
 								'</td>' +
 							'</tr>');
-						for(var ssk in sv) {
-							var ssv = sv[ssk];
+						for(let ssk in sv) {
+							let ssv = sv[ssk];
 							$('#ssrc' + kk).append(
 								'<tr>' +
 								'	<td><b>' + ssk + ':</b></td>' +
@@ -1099,8 +1292,8 @@ function prettyHandleInfo() {
 									'</table>' +
 								'</td>' +
 							'</tr>');
-						for(var ssk in sv) {
-							var ssv = sv[ssk];
+						for(let ssk in sv) {
+							let ssv = sv[ssk];
 							$('#components' + kk).append(
 								'<tr>' +
 									'<td colspan="2">' +
@@ -1109,11 +1302,11 @@ function prettyHandleInfo() {
 										'</table>' +
 									'</td>' +
 								'</tr>');
-							for(var cssk in ssv) {
-								var cssv = ssv[cssk];
+							for(let cssk in ssv) {
+								let cssv = ssv[cssk];
 								if(cssk === "local-candidates" || cssk === "remote-candidates") {
-									var candidates = "<ul>";
-									for(var c in cssv)
+									let candidates = "<ul>";
+									for(let c in cssv)
 										candidates += "<li>" + cssv[c] + "</li>";
 									candidates += "</ul>";
 									$('#stream' + kk + 'component' + ssk).append(
@@ -1122,8 +1315,8 @@ function prettyHandleInfo() {
 										'	<td>' + candidates + '</td>' +
 										'</tr>');
 								} else if(cssk === "dtls" || cssk === "in_stats" || cssk === "out_stats") {
-									var dtls = '<table class="table">';
-									for(var d in cssv) {
+									let dtls = '<table class="table">';
+									for(let d in cssv) {
 										dtls +=
 											'<tr>' +
 												'<td style="width:150px;"><b>' + d + '</b></td>' +
@@ -1162,13 +1355,13 @@ function prettyHandleInfo() {
 				'</tr>');
 		}
 	}
-	$('#options').show();
+	$('#options').removeClass('hide');
 }
 
 // Tokens
 function updateTokens() {
 	$('#update-tokens').unbind('click').addClass('fa-spin');
-	var request = { "janus": "list_tokens", "transaction": randomString(12), "admin_secret": secret };
+	let request = { "janus": "list_tokens", "transaction": randomString(12), "admin_secret": secret };
 	$.ajax({
 		type: 'POST',
 		url: server,
@@ -1178,7 +1371,7 @@ function updateTokens() {
 		success: function(json) {
 			if(json["janus"] !== "success") {
 				console.log("Ooops: " + json["error"].code + " " + json["error"].reason);	// FIXME
-				var authenticate = (json["error"].code === 403);
+				let authenticate = (json["error"].code === 403);
 				if(!authenticate || (authenticate && !prompting && !alerted)) {
 					if(authenticate)
 						alerted = true;
@@ -1205,9 +1398,9 @@ function updateTokens() {
 				'	<th>Permissions</th>' +
 				'	<th></th>' +
 				'</tr>');
-			for(var index in json.data.tokens) {
-				var t = json.data.tokens[index];
-				var tokenPlugins = t.allowed_plugins.toString().replace(/,/g,'<br/>');
+			for(let index in json.data.tokens) {
+				let t = json.data.tokens[index];
+				let tokenPlugins = t.allowed_plugins.toString().replace(/,/g,'<br/>');
 				$('#auth-tokens').append(
 					'<tr>' +
 					'	<td>' + t.token + '</td>' +
@@ -1215,7 +1408,7 @@ function updateTokens() {
 					'	<td><button  id="' + t.token + '" type="button" class="btn btn-xs btn-danger">Remove token</button></td>' +
 					'</tr>');
 				$('#'+t.token).click(function() {
-					var token = $(this).attr('id');
+					let token = $(this).attr('id');
 					bootbox.confirm("Are you sure you want to remove token " + token + "?", function(result) {
 						if(result)
 							removeToken(token);
@@ -1224,37 +1417,37 @@ function updateTokens() {
 			}
 			$('#auth-tokens').append(
 				'<tr>' +
-				'	<td><input type="text" id="token" placeholder="Token to add" onkeypress="return checkEnter(this, event);" style="width: 100%;"></td>' +
+				'	<td><input type="text" class="form-control" id="token" placeholder="Token to add" onkeypress="return checkEnter(this, event);" style="width: 100%;"></td>' +
 				'	<td><div id="permissions"></div></td>' +
 				'	<td><button id="addtoken" type="button" class="btn btn-xs btn-success">Add token</button></td>' +
 				'</tr>');
-			var pluginsCheckboxes = "";
-			for(var i in plugins) {
-				var plugin = plugins[i];
+			let pluginsCheckboxes = '';
+			for(let i in plugins) {
+				let plugin = plugins[i];
 				pluginsCheckboxes +=
-					'<div class="checkbox">' +
-					'	<label>' +
-					'		<input checked type="checkbox" value="' + plugin + '">' + plugin + '</input>' +
+					'<div class="form-check">' +
+					'	<input checked class="form-check-input" type="checkbox" value="' + plugin + '">' +
+					'	<label class="form-check-label" for="' + plugin + '">' + plugin + '</label>' +
 					'</div>';
 			}
 			$('#permissions').html(pluginsCheckboxes);
 			$('#addtoken').click(function() {
-				var token = $("#token").val().replace(/ /g,'');
+				let token = $("#token").val().replace(/ /g,'');
 				if(token === "") {
 					bootbox.alert("Please insert a valid token string");
 					return;
 				}
-				var checked = $(':checked');
+				let checked = $(':checked');
 				if(checked.length === 0) {
 					bootbox.alert("Please allow the token access to at least a plugin");
 					return;
 				}
-				var pluginPermissions = [];
-				for(var i=0; i<checked.length; i++)
+				let pluginPermissions = [];
+				for(let i=0; i<checked.length; i++)
 					pluginPermissions.push(checked[i].value);
-				var text = "Are you sure you want to add the new token " + token + " with access to the following plugins?" +
+				let text = "Are you sure you want to add the new token " + token + " with access to the following plugins?" +
 					"<br/><ul>";
-				for(var i in pluginPermissions)
+				for(let i in pluginPermissions)
 					text += "<li>" + pluginPermissions[i] + "</li>";
 				text += "</ul>";
 				bootbox.confirm(text, function(result) {
@@ -1263,6 +1456,7 @@ function updateTokens() {
 				});
 			});
 		},
+		// eslint-disable-next-line no-unused-vars
 		error: function(XMLHttpRequest, textStatus, errorThrown) {
 			console.log(textStatus + ": " + errorThrown);	// FIXME
 			$('#update-settings').removeClass('fa-spin').click(updateSettings);
@@ -1279,12 +1473,12 @@ function updateTokens() {
 }
 
 function addToken(token, permissions) {
-	var request = { "janus": "add_token", "token": token, plugins: permissions, "transaction": randomString(12), "admin_secret": secret };
+	let request = { "janus": "add_token", "token": token, plugins: permissions, "transaction": randomString(12), "admin_secret": secret };
 	sendTokenRequest(request);
 }
 
 function removeToken(token) {
-	var request = { "janus": "remove_token", "token": token, "transaction": randomString(12), "admin_secret": secret };
+	let request = { "janus": "remove_token", "token": token, "transaction": randomString(12), "admin_secret": secret };
 	sendTokenRequest(request);
 }
 
@@ -1299,7 +1493,7 @@ function sendTokenRequest(request) {
 		success: function(json) {
 			if(json["janus"] !== "success") {
 				console.log("Ooops: " + json["error"].code + " " + json["error"].reason);	// FIXME
-				var authenticate = (json["error"].code === 403);
+				let authenticate = (json["error"].code === 403);
 				if(!authenticate || (authenticate && !prompting && !alerted)) {
 					if(authenticate)
 						alerted = true;
@@ -1314,6 +1508,7 @@ function sendTokenRequest(request) {
 			}
 			updateTokens();
 		},
+		// eslint-disable-next-line no-unused-vars
 		error: function(XMLHttpRequest, textStatus, errorThrown) {
 			console.log(textStatus + ": " + errorThrown);	// FIXME
 			if(!prompting && !alerted) {
@@ -1361,10 +1556,10 @@ function captureTrafficPrompt() {
 				label: "Start",
 				className: "btn btn-primary pull-left",
 				callback: function() {
-					var text = $('#type').val() === "text2pcap";
-					var folder = $('#folder').val() !== '' ? $('#folder').val() : undefined;
-					var filename = $('#filename').val() !== '' ? $('#filename').val() : undefined;
-					var truncate = parseInt($('#truncate').val());
+					let text = $('#type').val() === "text2pcap";
+					let folder = $('#folder').val() !== '' ? $('#folder').val() : undefined;
+					let filename = $('#filename').val() !== '' ? $('#filename').val() : undefined;
+					let truncate = parseInt($('#truncate').val());
 					if(!truncate || isNaN(truncate))
 						truncate = 0;
 					captureTrafficRequest(true, text, folder, filename, truncate);
@@ -1372,7 +1567,7 @@ function captureTrafficPrompt() {
 			},
 			{
 				label: "Close",
-				className: "btn btn-default pull-left",
+				className: "btn btn-secondary pull-left",
 				callback: function() {
 					$('#capture').removeAttr('checked');
 					$('#capturetext').html('Start capture');
@@ -1383,9 +1578,9 @@ function captureTrafficPrompt() {
 }
 
 function captureTrafficRequest(start, text, folder, filename, truncate) {
-	var req = start ? ( text ? "start_text2pcap" : "start_pcap" ) :
+	let req = start ? ( text ? "start_text2pcap" : "start_pcap" ) :
 		( text ? "stop_text2pcap" : "stop_pcap" )
-	var request = { "janus": req, "transaction": randomString(12), "admin_secret": secret };
+	let request = { "janus": req, "transaction": randomString(12), "admin_secret": secret };
 	if(start) {
 		request["folder"] = folder;
 		request["filename"] = filename;
@@ -1408,6 +1603,7 @@ function captureTrafficRequest(start, text, folder, filename, truncate) {
 				return;
 			}
 		},
+		// eslint-disable-next-line no-unused-vars
 		error: function(XMLHttpRequest, textStatus, errorThrown) {
 			console.log(textStatus + ": " + errorThrown);	// FIXME
 			if(!prompting && !alerted) {
@@ -1422,8 +1618,9 @@ function captureTrafficRequest(start, text, folder, filename, truncate) {
 	});
 }
 
+// eslint-disable-next-line no-unused-vars
 function checkEnter(field, event) {
-	var theCode = event.keyCode ? event.keyCode : event.which ? event.which : event.charCode;
+	let theCode = event.keyCode ? event.keyCode : event.which ? event.which : event.charCode;
 	if(theCode == 13) {
 		if(field.id == 'token')
 			$('#addtoken').click();

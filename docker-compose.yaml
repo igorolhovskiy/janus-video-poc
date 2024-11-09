@@ -1,8 +1,6 @@
-version: "3"
-
 services:
   janus:
-    image: janus:janus-video-poc
+    image: janus:janus-streaming-poc
     hostname: janus
     build:
       context: .
@@ -12,15 +10,6 @@ services:
       - ./janus/cert/server.crt:/etc/ssl/private/server.crt
       - ./janus/cert/server.key:/etc/ssl/private/server.key
     network_mode: host
-
-  asterisk:
-    image: asterisk:janus-video-poc
-    build:
-      context: .
-      dockerfile: Dockerfile.asterisk
-    network_mode: host
-    volumes:
-      - "./asterisk:/etc/asterisk"
 
   web:
     image: nginx:alpine
