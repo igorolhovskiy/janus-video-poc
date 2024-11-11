@@ -11,11 +11,11 @@
 # id = <unique numeric ID> (if missing, a random one will be generated)
 # description = This is my awesome stream
 # metadata = An optional string that can contain any metadata (e.g., JSON)
-#		   associated with the stream you want users to receive
+#          associated with the stream you want users to receive
 # is_private = true|false (private streams don't appear when you do a 'list'
-#			request)
+#           request)
 # secret = <optional password needed for manipulating (e.g., destroying
-#			or enabling/disabling) the stream>
+#           or enabling/disabling) the stream>
 # pin = <optional password needed for watching the stream>
 # filename = path to the local file to stream (only for live/ondemand)
 # audio = true|false (do/don't stream audio)
@@ -29,7 +29,7 @@
 # audiopt = <audio RTP payload type> (e.g., 111)
 # audiocodec = name of the audio codec (e.g., opus)
 # audioskew = true|false (whether the plugin should perform skew
-#		analisys and compensation on incoming audio RTP stream, EXPERIMENTAL)
+#       analisys and compensation on incoming audio RTP stream, EXPERIMENTAL)
 # videoport = local port for receiving video frames
 # videortcpport = local port, if any, for receiving and sending video RTCP feedback
 # videomcast = multicast group port for receiving video frames, if any
@@ -37,27 +37,27 @@
 # videopt = <video RTP payload type> (e.g., 100)
 # videocodec = name of the video codec (e.g., vp8)
 # videobufferkf = true|false (whether the plugin should store the latest
-#		keyframe and send it immediately for new viewers, EXPERIMENTAL)
+#       keyframe and send it immediately for new viewers, EXPERIMENTAL)
 # videosimulcast = true|false (do|don't enable video simulcasting)
 # videoport2 = second local port for receiving video frames (only for rtp, and simulcasting)
 # videoport3 = third local port for receiving video frames (only for rtp, and simulcasting)
 # videoskew = true|false (whether the plugin should perform skew
-#		analisys and compensation on incoming video RTP stream, EXPERIMENTAL)
+#       analisys and compensation on incoming video RTP stream, EXPERIMENTAL)
 # videosvc = true|false (whether the video will have SVC support; works only for VP9-SVC, default=false)
 # h264sps = if using H.264 as a video codec, value of the sprop-parameter-sets
-#		that would normally be sent via SDP, but that we'll use to instead
-#		manually ingest SPS and PPS packets via RTP for streams that miss it
+#       that would normally be sent via SDP, but that we'll use to instead
+#       manually ingest SPS and PPS packets via RTP for streams that miss it
 # collision = in case of collision (more than one SSRC hitting the same port), the plugin
-#		will discard incoming RTP packets with a new SSRC unless this many milliseconds
-#		passed, which would then change the current SSRC (0=disabled)
+#       will discard incoming RTP packets with a new SSRC unless this many milliseconds
+#       passed, which would then change the current SSRC (0=disabled)
 # dataport = local port for receiving data messages to relay
 # dataiface = network interface or IP address to bind to, if any (binds to all otherwise)
 # datatype = text|binary (type of data this mountpoint will relay, default=text)
 # databuffermsg = true|false (whether the plugin should store the latest
-#		message and send it immediately for new viewers)
+#       message and send it immediately for new viewers)
 # threads = number of threads to assist with the relaying part, which can help
-#		if you expect a lot of viewers that may cause the RTP receiving part
-#		in the Streaming plugin to slow down and fail to catch up (default=0)
+#       if you expect a lot of viewers that may cause the RTP receiving part
+#       in the Streaming plugin to slow down and fail to catch up (default=0)
 #
 # In case you want to use SRTP for your RTP-based mountpoint, you'll need
 # to configure the SRTP-related properties as well, namely the suite to
@@ -95,15 +95,15 @@
 # rtsp_user = RTSP authorization username (only if type=rtsp)
 # rtsp_pwd = RTSP authorization password (only if type=rtsp)
 # rtsp_quirk = Some RTSP servers offer the stream using only the path, instead of the fully qualified URL.
-#		If set true, this boolean informs Janus that we should try a path-only DESCRIBE request if the initial request returns 404.
+#       If set true, this boolean informs Janus that we should try a path-only DESCRIBE request if the initial request returns 404.
 # rtsp_failcheck = whether an error should be returned if connecting to the RTSP server fails (default=true)
 # rtspiface = network interface or IP address to bind to, if any (binds to all otherwise), when receiving RTSP streams
 # rtsp_reconnect_delay = after n seconds passed and no media assumed, the RTSP server has gone and schedule a reconnect (default=5s)
 # rtsp_session_timeout = by default the streaming plugin will check the RTSP connection with an OPTIONS query,
-# 		the value of the timeout comes from the RTSP session initializer and by default
-# 		this session timeout is the half of this value In some cases this value can be too high (for example more than one minute)
-# 		because of the media server. In that case this plugin will calculate the timeout with this
-# 		formula: timeout = min(session_timeout, rtsp_session_timeout / 2). (default=0s)
+#       the value of the timeout comes from the RTSP session initializer and by default
+#       this session timeout is the half of this value In some cases this value can be too high (for example more than one minute)
+#       because of the media server. In that case this plugin will calculate the timeout with this
+#       formula: timeout = min(session_timeout, rtsp_session_timeout / 2). (default=0s)
 # rtsp_timeout = communication timeout (CURLOPT_TIMEOUT) for cURL call gathering the RTSP information (default=10s)
 # rtsp_conn_timeout = connection timeout for cURL (CURLOPT_CONNECTTIMEOUT) call gathering the RTSP information (default=5s)
 #
@@ -119,16 +119,16 @@
 #}
 
 general: {
-	#admin_key = "supersecret"		# If set, mountpoints can be created via API
-									# only if this key is provided in the request
-	#rtp_port_range = "20000-40000"	# Range of ports to use for RTP/RTCP when '0' is
-									# passed as port for a mountpoint (default=10000-60000)
-	#events = false					# Whether events should be sent to event
-									# handlers (default=true)
+    #admin_key = "supersecret"      # If set, mountpoints can be created via API
+                                    # only if this key is provided in the request
+    #rtp_port_range = "20000-40000" # Range of ports to use for RTP/RTCP when '0' is
+                                    # passed as port for a mountpoint (default=10000-60000)
+    #events = false                 # Whether events should be sent to event
+                                    # handlers (default=true)
 
-	# By default, integers are used as a unique ID for both mountpoints. In case
-	# you want to use strings instead (e.g., a UUID), set string_ids to true.
-	#string_ids = true
+    # By default, integers are used as a unique ID for both mountpoints. In case
+    # you want to use strings instead (e.g., a UUID), set string_ids to true.
+    #string_ids = true
 }
 
 #
@@ -141,19 +141,19 @@ general: {
 # be the source of a WebRTC broadcast users can subscribe to.
 #
 rtp-sample: {
-	type = "rtp"
-	id = 1
-	description = "Opus/VP8 live stream coming from external source"
-	metadata = "You can use this metadata section to put any info you want!"
-	audio = true
-	video = true
-	audioport = 5002
-	audiopt = 111
-	audiocodec = "opus"
-	videoport = 5004
-	videopt = 100
-	videocodec = "vp8"
-	secret = "adminpwd"
+    type = "rtp"
+    id = 1
+    description = "Opus/VP8 live stream coming from external source"
+    metadata = "You can use this metadata section to put any info you want!"
+    audio = true
+    video = true
+    audioport = 5002
+    audiopt = 111
+    audiocodec = "opus"
+    videoport = 5004
+    videopt = 100
+    videocodec = "vp8"
+    secret = "adminpwd"
 }
 
 #
@@ -174,37 +174,37 @@ rtp-sample: {
 # as well (e.g., 1 audio and 1 video) in a much clearer, and cleaner, way.
 #
 multistream-test: {
-	type = "rtp"
-	id = 123
-	description = "Multistream test (1 audio, 2 video)"
-	metadata = "This is an example of a multistream mountpoint: you'll get an audio stream and two video feeds"
-	media = (
-		{
-			type = "audio"
-			mid = "a"
-			label = "Audio stream"
-			port = 5102
-			pt = 111
-			codec = "opus"
-		},
-		{
-			type = "video"
-			mid = "v1"
-			label = "Video stream #1"
-			port = 5104
-			pt = 100
-			codec = "vp8"
-		},
-		{
-			type = "video"
-			mid = "v2"
-			label = "Video stream #2"
-			port = 5106
-			pt = 100
-			codec = "vp8"
-		}
-	)
-	secret = "adminpwd"
+    type = "rtp"
+    id = 123
+    description = "Multistream test (1 audio, 2 video)"
+    metadata = "This is an example of a multistream mountpoint: you'll get an audio stream and two video feeds"
+    media = (
+        {
+            type = "audio"
+            mid = "a"
+            label = "Audio stream"
+            port = 5102
+            pt = 111
+            codec = "opus"
+        },
+        {
+            type = "video"
+            mid = "v1"
+            label = "Video stream #1"
+            port = 5104
+            pt = 100
+            codec = "vp8"
+        },
+        {
+            type = "video"
+            mid = "v2"
+            label = "Video stream #2"
+            port = 5106
+            pt = 100
+            codec = "vp8"
+        }
+    )
+    secret = "adminpwd"
 }
 
 #
@@ -215,13 +215,13 @@ multistream-test: {
 # Notice that file-based streaming supports Opus files too, but no video.
 #
 file-live-sample: {
-	type = "live"
-	id = 2
-	description = "a-law file source (radio broadcast)"
-	filename = "/opt/janus/share/janus/streams/radio.alaw"
-	audio = true
-	video = false
-	secret = "adminpwd"
+    type = "live"
+    id = 2
+    description = "a-law file source (radio broadcast)"
+    filename = "/opt/janus/share/janus/streams/radio.alaw"
+    audio = true
+    video = false
+    secret = "adminpwd"
 }
 
 #
@@ -233,13 +233,13 @@ file-live-sample: {
 # loop when it's over. On-demand streaming supports Opus files as well.
 #
 file-ondemand-sample: {
-	type = "ondemand"
-	id = 3
-	description = "mu-law file source (music)"
-	filename = "/opt/janus/share/janus/streams/music.mulaw"
-	audio = true
-	video = false
-	secret = "adminpwd"
+    type = "ondemand"
+    id = 3
+    description = "mu-law file source (music)"
+    filename = "/opt/janus/share/janus/streams/music.mulaw"
+    audio = true
+    video = false
+    secret = "adminpwd"
 }
 
 #
@@ -252,16 +252,16 @@ file-ondemand-sample: {
 # an x264enc+rtph264pay pipeline in gstreamer, an ffmpeg script or other.
 #
 #h264-sample: {
-	#type = "rtp"
-	#id = 10
-	#description = "H.264 live stream coming from gstreamer"
-	#audio = false
-	#video = true
-	#videoport = 8004
-	#videopt = 126
-	#videocodec = "h264"
-	#videofmtp = "profile-level-id=42e01f;packetization-mode=1"
-	#secret = "adminpwd"
+    #type = "rtp"
+    #id = 10
+    #description = "H.264 live stream coming from gstreamer"
+    #audio = false
+    #video = true
+    #videoport = 8004
+    #videopt = 126
+    #videocodec = "h264"
+    #videofmtp = "profile-level-id=42e01f;packetization-mode=1"
+    #secret = "adminpwd"
 #}
 
 #
@@ -274,15 +274,15 @@ file-ondemand-sample: {
 # datachannel messages will be sent as usual, and not use RTP at all.
 #
 #data-example: {
-	#type = "rtp"
-	#id = 15
-	#description = "Datachannel stream from an UDP source"
-	#audio = false
-	#video = false
-	#data = true
-	#dataport = 5008
-	#datatype = "text"
-	#secret = "adminpwd"
+    #type = "rtp"
+    #id = 15
+    #description = "Datachannel stream from an UDP source"
+    #audio = false
+    #video = false
+    #data = true
+    #dataport = 5008
+    #datatype = "text"
+    #secret = "adminpwd"
 #}
 
 #
@@ -291,20 +291,20 @@ file-ondemand-sample: {
 # need an external script to feed data on those ports, of course.
 #
 #rtp-multicast: {
-	#type = "rtp"
-	#id = 20
-	#description = "Opus/VP8 live multicast stream sample"
-	#audio = true
-	#video = true
-	#audioport = 5002
-	#audiomcast = "232.3.4.5"
-	#audiopt = 111
-	#audiocodec = "opus"
-	#videoport = 5004
-	#videomcast = "232.3.4.5"
-	#videopt = 100
-	#videocodec = "vp8"
-	#secret = "adminpwd"
+    #type = "rtp"
+    #id = 20
+    #description = "Opus/VP8 live multicast stream sample"
+    #audio = true
+    #video = true
+    #audioport = 5002
+    #audiomcast = "232.3.4.5"
+    #audiopt = 111
+    #audiocodec = "opus"
+    #videoport = 5004
+    #videomcast = "232.3.4.5"
+    #videopt = 100
+    #videocodec = "vp8"
+    #secret = "adminpwd"
 #}
 
 #
@@ -317,17 +317,17 @@ file-ondemand-sample: {
 # Again, you can override payload type, codec and/or fmtp, if needed.
 #
 #rtsp-test: {
-	#type = "rtsp"
-	#id = 99
-	#description = "RTSP Test"
-	#audio = false
-	#video = true
-	#url = "rtsp://127.0.0.1:8554/unicast"
-	#rtsp_user = "username"
-	#rtsp_pwd = "password"
-	#secret = "adminpwd"
-	#rtsp_reconnect_delay = 5
-	#rtsp_session_timeout = 0
-	#rtsp_timeout = 10
-	#rtsp_conn_timeout = 5
+    #type = "rtsp"
+    #id = 99
+    #description = "RTSP Test"
+    #audio = false
+    #video = true
+    #url = "rtsp://127.0.0.1:8554/unicast"
+    #rtsp_user = "username"
+    #rtsp_pwd = "password"
+    #secret = "adminpwd"
+    #rtsp_reconnect_delay = 5
+    #rtsp_session_timeout = 0
+    #rtsp_timeout = 10
+    #rtsp_conn_timeout = 5
 #}
