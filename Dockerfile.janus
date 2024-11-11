@@ -35,5 +35,5 @@ RUN apt-get update \
     && make \
     && make install \
     && mkdir -p /opt/janus/etc/janus
-    
+
 ENTRYPOINT [ "/opt/janus/bin/janus" ]
