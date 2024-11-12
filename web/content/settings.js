@@ -52,10 +52,18 @@
 // the whole session.
 //
 var server = null;
-if(window.location.protocol === 'http:')
-	server = "http://" + window.location.hostname + ":8088/janus";
-else
-	server = "https://" + window.location.hostname + ":8089/janus";
+
+if(window.location.protocol === 'http:') {
+	server = [
+	    "http://" + window.location.hostname + ":8088/janus",
+	    "ws://" + window.location.hostname + ":8188/janus",
+	];
+} else {
+	server = [
+	    "https://" + window.location.hostname + ":8089/janus",
+	    "wss://" + window.location.hostname + ":8989/janus",
+	];
+}
 
 // When creating a Janus object, we can also specify which STUN/TURN
 // servers we'd like to use to gather additional candidates. This is
