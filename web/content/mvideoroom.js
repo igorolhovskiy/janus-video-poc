@@ -78,6 +78,7 @@ $(document).ready(function() {
 									Janus.error("  -- Error attaching plugin...", error);
 									bootbox.alert("Error attaching plugin... " + error);
 								},
+								// Dialog to show request to access to media devices
 								consentDialog: function(on) {
 									Janus.debug("Consent dialog should be " + (on ? "on" : "off") + " now");
 									if(on) {
@@ -98,6 +99,7 @@ $(document).ready(function() {
 										$.unblockUI();
 									}
 								},
+
 								iceState: function(state) {
 									Janus.log("ICE state changed to " + state);
 								},
